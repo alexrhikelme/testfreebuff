@@ -1,8 +1,8 @@
 Grupo:
-Alex Rhikelme
-Igor Gabriel
-Lucas Mourato
-Gabriel Vera
+Alex Rhikelme,
+Igor Gabriel,
+Lucas Mourato,
+Gabriel Vera e 
 Kelvson Nilson
 
 Uma aplicação que busca juntar o tipo de organização de projeto Kanban + Notion para a agência Combogó da UNICAP, onde será possível designar tarefas a pessoas e definir o prazo para cada atividade, além de formas de visualizar a progressão do projeto por porcentagem ou gráficos.
