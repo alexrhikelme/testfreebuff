@@ -1,0 +1,13 @@
+# Segredos de ambiente (nunca versionar)
+.env
+.env.local
+.env.*.local
+
+# Dependências e saída de build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Artefatos avulsos (mantidos no disco, fora do versionamento)
+*.zip
+_tmp_check.sh
