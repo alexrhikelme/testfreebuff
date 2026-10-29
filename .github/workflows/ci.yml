@@ -1,7 +1,4 @@
-# CI — lint, typecheck e testes
-
- Esta verificação roda em cada push e pull request para garantir
- qualidade de código, consistência de tipos e cobertura de testes.
+name: CI
 
 on:
   push:
@@ -39,14 +36,11 @@ jobs:
       - name: Testes unitários (Vitest)
         run: bun run test
 
-      - name: Cobertura e relatório
+      - name: Relatório de cobertura
         if: always()
-        run: |
-          bun run test -- --coverage
-          mkdir -p coverage
-          cp -r .vitest/coverage coverage/ || true
+        run: bun run test -- --coverage
 
-      - name: Upload do relatório de cobertura
+      - name: Publicar relatório de cobertura
         if: always()
         uses: actions/upload-artifact@v4
         with:
