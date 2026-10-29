@@ -1,6 +1,7 @@
 /**
  * Sprint 11 — Janela "Templates".
  * Catálogo de modelos padronizados (dados puros, sem React).
+ * Pente fino: descrições e corpos resumidos para leitura rápida.
  */
 
 export type TemplateTab =
@@ -35,71 +36,65 @@ export const TEMPLATES: Template[] = [
     tab: "gestao",
     categoryLabel: "Gestão Ágil",
     title: "Sprint Board Completo",
-    description:
-      "Quadro ágil padrão para squads com colunas de backlog, execução, impedimentos e acompanhamento de entregas semanais.",
+    description: "Backlog, execução, impedimentos e conclusão num quadro só.",
     author: "Polo de Inovação",
     icon: "board",
     body:
-      "Colunas: Backlog • Execução • Impedimentos • Concluído.\n\nDefinição de pronto (DoD):\n- Código revisado e testado\n- Documentação atualizada\n- Aprovação do líder da equipe",
+      "Colunas: Backlog • Execução • Impedimentos • Concluído.\nDoD: código revisado, testado e documentado.",
   },
   {
     id: "tpl-prd",
     tab: "documentos",
     categoryLabel: "Documentação",
     title: "PRD Técnico & Arquitetura",
-    description:
-      "Estrutura direta para especificação de requisitos de software, escopo técnico, endpoints de API e critérios de aceite.",
+    description: "Esqueleto de PRD: escopo, requisitos técnicos e aceite.",
     author: "Engenharia Core",
     icon: "file",
     body:
-      "1. Visão Geral & Escopo\nContexto, problema e objetivos do produto.\n\n2. Requisitos Técnicos\nEndpoints de API, modelos de dados e integrações.\n\n3. Critérios de Aceite\nLista verificável de condições de aceitação.",
+      "1. Visão & Escopo\n2. Requisitos Técnicos (API, dados)\n3. Critérios de Aceite",
   },
   {
     id: "tpl-tokens",
     tab: "design",
     categoryLabel: "Design System",
     title: "Guia de Tokens & Componentes",
-    description:
-      "Padrões visuais do Combogó com paleta oficial, escalas tipográficas e estrutura de componentes para novas interfaces.",
+    description: "Cores, tipografia e componentes do Combogó em um guia curto.",
     author: "Equipe UI/UX",
     icon: "palette",
     body:
-      "1. Cores\nPaleta oficial, estados e contraste AA.\n\n2. Tipografia\nEscala de títulos e textos.\n\n3. Componentes\nBotões, inputs, cards e padrões de interação.",
+      "1. Cores — paleta e contraste AA\n2. Tipografia — escala de títulos e textos\n3. Componentes — botões, inputs e cards",
   },
   {
     id: "tpl-gdd",
     tab: "jogos",
     categoryLabel: "Jogos & VR",
     title: "Game Design Document (GDD)",
-    description:
-      "Guia organizado para definição do loop principal de gameplay, mecânicas interativas e roteiro de produção transmídia.",
+    description: "Conceito, loop principal e produção do jogo.",
     author: "Polo Games",
     icon: "gamepad",
     body:
-      "1. Conceito & Pilares\nFantasia central e pilares de design.\n\n2. Loop Principal\nAções do jogador, recompensas e progressão.\n\n3. Produção\nMilestones, arte e som.",
+      "1. Conceito & Pilares\n2. Loop Principal\n3. Produção (marcos, arte e som)",
   },
   {
     id: "tpl-rice",
     tab: "design",
     categoryLabel: "Pesquisa UX",
     title: "Pesquisa & Priorização RICE",
-    description:
-      "Roteiros de entrevista, mapas de síntese e planilha para cálculo objetivo de prioridades e esforço de implementação.",
+    description: "Entrevistas, síntese e priorização por score RICE.",
     author: "Pesquisa & Métodos",
     icon: "users",
     body:
-      "1. Roteiro de Entrevista\nPerguntas abertas e hipóteses.\n\n2. Síntese\nMapa de dores e oportunidades.\n\n3. RICE\nScore = (Alcance × Efeito × Confiança) / Esforço.",
+      "1. Roteiro de Entrevista\n2. Síntese (dores e oportunidades)\n3. RICE = (Alcance × Efeito × Confiança) / Esforço",
   },
   {
     id: "tpl-retro",
     tab: "gestao",
     categoryLabel: "Cerimônia",
     title: "Retrospectiva & Revisão",
-    description:
-      "Quadro para reuniões de fechamento de ciclo com pontos positivos, melhorias necessárias e definição de ações do squad.",
+    description: "O que funcionou, o que melhorar e ações com responsável.",
     author: "Gestão Ágil",
     icon: "check",
     body:
-      "1. O que funcionou?\nPontos positivos do ciclo.\n\n2. O que melhorar?\nPontos de atrito e melhorias.\n\n3. Ações\nResponsável e prazo para cada ação.",
+      "1. O que funcionou?\n2. O que melhorar?\n3. Ações — responsável e prazo",
   },
 ];

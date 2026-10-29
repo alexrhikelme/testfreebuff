@@ -4,20 +4,23 @@ import userEvent from "@testing-library/user-event";
 import App from "../app/App";
 
 /**
- * Sprint 11 (correção) — navegação do shell: cada botão da sidebar do
- * canto superior esquerdo deve levar à página respectiva sob /app.
+ * Navegação do shell — a sidebar é dirigida por PROJETOS: cada projeto
+ * expande e revela as seções principais dentro dele, todas sob
+ * /app/p/:projectId/*. O antigo grupo "Principal" separado não existe mais.
  *
- * O teste monta o App real (rotas + auth local) e percorre os 7 links.
+ * O teste monta o App real (rotas + auth local) e percorre as 6 seções
+ * dentro do projeto padrão (Q3 Product Launch).
  */
 
+const PROJECT_ID = "dash-q3";
+
 const SIDEBAR_CASES: Array<{ label: string; href: string; heading: string }> = [
-  { label: "Quadro de Notas", href: "/app/notes", heading: "Anotações" },
-  { label: "Dashboards", href: "/app/dashboards", heading: "Dashboards" },
-  { label: "Minhas Anotações", href: "/app/documents", heading: "Minhas Anotações" },
-  { label: "Equipe & Parceiros", href: "/app/team", heading: "Equipe & Parceiros" },
-  { label: "Templates", href: "/app/templates", heading: "Templates" },
-  { label: "Lixeira", href: "/app/trash", heading: "Lixeira" },
-  { label: "Visão geral", href: "/app", heading: "Visão geral" },
+  { label: "Quadro de Notas", href: `/app/p/${PROJECT_ID}/notes`, heading: "Kanban" },
+  { label: "Minhas Anotações", href: `/app/p/${PROJECT_ID}/documents`, heading: "Minhas Anotações" },
+  { label: "Equipe & Parceiros", href: `/app/p/${PROJECT_ID}/team`, heading: "Equipe & Parceiros" },
+  { label: "Templates", href: `/app/p/${PROJECT_ID}/templates`, heading: "Templates" },
+  { label: "Lixeira", href: `/app/p/${PROJECT_ID}/trash`, heading: "Lixeira" },
+  { label: "Visão geral", href: `/app/p/${PROJECT_ID}`, heading: "Visão geral" },
 ];
 
 /** Abre o App em `pathname` e conclui o login simulado do modo local. */
@@ -42,7 +45,44 @@ describe("Navegação da sidebar do AppShellPage", () => {
     expect(window.location.pathname).toBe("/app");
   });
 
-  it("cada botão da sidebar leva para a página respectiva", async () => {
+  it("a sidebar lista projetos com as seções principais aninhadas dentro", async () => {
+    await openAppAt("/app");
+    await screen.findByRole("heading", { name: "Visão geral", level: 1 });
+
+    // Projeto é um link de primeira classe em /app/p/:id.
+    const project = screen.getByRole("link", { name: "Q3 Product Launch" });
+    expect(project).toHaveAttribute("href", `/app/p/${PROJECT_ID}`);
+
+    // Cada seção principal vive DENTRO do projeto, não num grupo separado.
+    for (const c of SIDEBAR_CASES) {
+      const link = screen.getByRole("link", { name: c.label });
+      expect(link.getAttribute("href")).toBe(c.href);
+      expect(link.getAttribute("href")).toMatch(
+        new RegExp(`^/app/p/${PROJECT_ID}`)
+      );
+    }
+
+    // O rótulo do antigo grupo "Principal" separado não existe mais.
+    expect(screen.queryByText("Principal")).not.toBeInTheDocument();
+  });
+
+  it("\"Projetos ativos\" abre a página com todos os projetos em retângulos clicáveis", async () => {
+    const user = await openAppAt("/app");
+    await screen.findByRole("heading", { name: "Visão geral", level: 1 });
+
+    await user.click(screen.getByRole("link", { name: "Projetos ativos" }));
+    await screen.findByRole("heading", { name: "Projetos ativos", level: 1 });
+    expect(window.location.pathname).toBe("/app/projects");
+
+    // Todos os 5 projetos semente aparecem, com o nome dentro de um
+    // retângulo (link) que deixa claro que o item é clicável.
+    const tiles = screen.getAllByRole("link", { name: /^Abrir projeto / });
+    expect(tiles).toHaveLength(5);
+    expect(tiles[0]).toHaveAttribute("href", `/app/p/${PROJECT_ID}`);
+    expect(tiles[0].className).toContain("rounded-lg");
+  });
+
+  it("cada seção do projeto leva para a página respectiva", async () => {
     const user = await openAppAt("/app");
     await screen.findByRole("heading", { name: "Visão geral", level: 1 });
 

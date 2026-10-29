@@ -4,6 +4,20 @@ export type NoteStatus =
   | "completed"
   | "blocked";
 
+/**
+ * Sprints do quadro (montagem de sprints) — coluna criada pelo usuário
+ * ALÉM das 4 colunas base, que continuam sendo os status da nota.
+ * O vínculo nota → sprint mora no store (sprintOf) e é persistido no
+ * localStorage, junto com os títulos já existentes das colunas base.
+ */
+export type SprintColumn = {
+  id: string;
+  title: string;
+};
+
+/** Colunas base do Kanban: os quatro status da nota (Sprint 1…4). */
+export const BASE_COLUMN_COUNT = 4;
+
 export type Note = {
   id: string;
   title: string;

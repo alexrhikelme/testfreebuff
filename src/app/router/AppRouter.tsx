@@ -218,6 +218,7 @@ export const RequireAuth: React.FC<{ children?: React.ReactNode }> = () => {
 
 export const PublicOnly: React.FC<{ children?: React.ReactNode }> = () => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -228,7 +229,12 @@ export const PublicOnly: React.FC<{ children?: React.ReactNode }> = () => {
   }
 
   if (user) {
-    return <Navigate to="/app" replace />;
+    // Ao sair da tela pública (login concluído) o destino é o original
+    // pedido pelo usuário (returnTo), não sempre /app: sem isso o bounce
+    // deste componente pode sobrescrever a volta para a rota profunda.
+    const from = (location.state as { from?: { pathname?: string } } | null)
+      ?.from?.pathname;
+    return <Navigate to={from ?? "/app"} replace />;
   }
 
   return <Outlet />;

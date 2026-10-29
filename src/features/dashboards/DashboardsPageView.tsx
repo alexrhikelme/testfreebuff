@@ -5,7 +5,7 @@ import { useNotes } from "@/features/notes";
 import type { Note } from "@/features/notes/types";
 import type { Dashboard, MemberRole } from "./store";
 
-export function DashboardsPageView() {
+export function DashboardsPageView({ projectId }: { projectId?: string } = {}) {
   const {
     dashboards,
     members,
@@ -18,6 +18,11 @@ export function DashboardsPageView() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Dashboard | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  /** No escopo de projeto, o único dashboard é o do próprio projeto. */
+  const visible = projectId
+    ? dashboards.filter((d) => d.id === projectId)
+    : dashboards;
+  const projectName = visible[0]?.name;
   /** Sprint 10 (H3): dashboard aguardando confirmação de exclusão. */
   const [pendingDelete, setPendingDelete] = useState<Dashboard | null>(null);
 
@@ -44,10 +49,12 @@ export function DashboardsPageView() {
             Dashboards
           </h1>
           <p className="mt-1 text-sm text-on-surface-variant">
-            Agrupe anotações por contexto e compartilhe com a equipe.
+            {projectId
+              ? `Dashboard do projeto “${projectName ?? projectId}”: notas vinculadas, membros e ajustes.`
+              : "Agrupe anotações por contexto e compartilhe com a equipe."}
           </p>
         </div>
-        {editable && (
+        {editable && !projectId && (
           <button
             type="button"
             onClick={() => setCreating(true)}
@@ -62,7 +69,7 @@ export function DashboardsPageView() {
         )}
       </div>
 
-      {dashboards.length === 0 ? (
+      {visible.length === 0 ? (
         <div className="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-10 text-center">
           <p className="text-sm text-on-surface-variant">
             Nenhum dashboard ainda. Crie o primeiro para organizar suas notas.
@@ -70,10 +77,11 @@ export function DashboardsPageView() {
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          {dashboards.map((d) => {
+          {visible.map((d) => {
             const dNotes = notesByDashboard.get(d.id) ?? [];
             const dMembers = members.filter((m) => m.dashboardId === d.id);
-            const isOpen = openId === d.id;
+            // No escopo de projeto o card fica sempre aberto (é o único).
+            const isOpen = projectId ? true : openId === d.id;
             return (
               <DashboardCard
                 key={d.id}
@@ -94,7 +102,7 @@ export function DashboardsPageView() {
         </div>
       )}
 
-      {unlinkedCount > 0 && (
+      {!projectId && unlinkedCount > 0 && (
         <p className="mt-4 text-xs text-on-surface-variant/70">
           {unlinkedCount} anotação{unlinkedCount === 1 ? "" : "ões"} fora de
           qualquer dashboard. Abra um dashboard para vinculá-las.
@@ -276,11 +284,14 @@ function DashboardCard({
   );
 }
 
-function DashboardFormModal({
+export function DashboardFormModal({
   dashboard,
+  title,
   onClose,
 }: {
   dashboard?: Dashboard;
+  /** Rótulo do título (a mesma janela atende "dashboard" e "projeto"). */
+  title?: string;
   onClose: () => void;
 }) {
   const { createDashboard, updateDashboard } = useLab();
@@ -306,7 +317,7 @@ function DashboardFormModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-[2px]">
       <div className="w-full max-w-md rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-6 shadow-xl">
         <h2 className="font-display text-lg font-semibold text-on-surface">
-          {dashboard ? "Renomear dashboard" : "Novo dashboard"}
+          {title ?? (dashboard ? "Renomear dashboard" : "Novo dashboard")}
         </h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>

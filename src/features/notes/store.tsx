@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import type { Note, NoteStatus, ActivityEntry } from "./types";
+import type { Note, NoteStatus, ActivityEntry, SprintColumn } from "./types";
+import { BASE_COLUMN_COUNT } from "./types";
 import {
   useNotesQuery as useConvexNotes,
   useActivityQuery as useConvexActivity,
@@ -20,12 +21,24 @@ type NewNoteInput = {
   startDate?: string;
   dueDate?: string;
   dashboardId?: string;
+  /** Sprint do quadro onde a nota nasce (sprints criados pelo usuário). */
+  sprintId?: string;
 };
 
 type NotesContextValue = {
   notes: Note[];
   /** Ordem manual dentro de cada coluna do Kanban (id → posição). */
   order: Record<string, number>;
+  /** Sprints criados no quadro, além das 4 colunas base de status. */
+  sprints: SprintColumn[];
+  /** Vínculo nota → sprint no quadro (id da nota → id do sprint). */
+  sprintOf: Record<string, string>;
+  /** Cria uma coluna de sprint e devolve a coluna criada. */
+  addSprint: (title?: string) => SprintColumn;
+  /** Renomeia um sprint do quadro. */
+  renameSprint: (id: string, title: string) => void;
+  /** Remove o sprint; as notas voltam para as colunas de status. */
+  removeSprint: (id: string) => void;
   /** Sprint 6: atividade recente (edições colaborativas). */
   activity: ActivityEntry[];
   /** Sprint 10 (H1): verdadeiro enquanto a lista carrega (modo Convex). */
@@ -33,9 +46,57 @@ type NotesContextValue = {
   createNote: (input: NewNoteInput) => Note;
   updateNote: (id: string, patch: Partial<NewNoteInput>) => void;
   deleteNote: (id: string) => void;
-  /** Sprint 5: move a nota de status e posição (drag-and-drop do Kanban). */
-  moveNote: (id: string, status: NoteStatus, beforeId?: string) => void;
+  /**
+   * Sprint 5: move a nota de status e posição (drag-and-drop do Kanban).
+   * `sprintId` opcional reposiciona a nota entre sprints: `null` devolve a
+   * nota para as colunas de status, uma string move para aquele sprint e
+   * `undefined` preserva o vínculo atual.
+   */
+  moveNote: (
+    id: string,
+    status: NoteStatus,
+    beforeId?: string,
+    sprintId?: string | null
+  ) => void;
 };
+
+/* ------------------------------------------------------------------ */
+/* Sprints do quadro — colunas além das 4 base, salvas no navegador.   */
+/* ------------------------------------------------------------------ */
+
+const SPRINTS_STORAGE_KEY = "kanban-sprints";
+
+type SprintsState = {
+  columns: SprintColumn[];
+  membership: Record<string, string>;
+};
+
+const EMPTY_SPRINTS: SprintsState = { columns: [], membership: {} };
+
+function loadSprints(): SprintsState {
+  try {
+    const raw = window.localStorage.getItem(SPRINTS_STORAGE_KEY);
+    if (!raw) return EMPTY_SPRINTS;
+    const parsed = JSON.parse(raw) as Partial<SprintsState>;
+    return {
+      columns: Array.isArray(parsed.columns) ? parsed.columns : [],
+      membership:
+        parsed.membership && typeof parsed.membership === "object"
+          ? parsed.membership
+          : {},
+    };
+  } catch {
+    return EMPTY_SPRINTS;
+  }
+}
+
+function persistSprints(next: SprintsState): void {
+  try {
+    window.localStorage.setItem(SPRINTS_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Storage indisponível: mantém só o estado em memória.
+  }
+}
 
 const seedNotes: Note[] = [
   {
@@ -86,6 +147,7 @@ const NotesContext = createContext<NotesContextValue | null>(null);
  */
 export function NotesProvider({ children }: { children: ReactNode }) {
   const mode = getBackendMode();
+  const [sprintState, setSprintState] = useState<SprintsState>(loadSprints);
   const convexNotes = useConvexNotes();
   const convexActivity = useConvexActivity();
   const convexOrder = useConvexNotesOrder();
@@ -119,6 +181,74 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const { user } = useOptionalAuth();
   const actor = user?.name ?? CURRENT_USER;
 
+  /** Grava o novo estado dos sprints (memória + localStorage). */
+  const commitSprints = useCallback((next: SprintsState) => {
+    persistSprints(next);
+    setSprintState(next);
+  }, []);
+
+  /** Vincula (ou desvincula) uma nota a um sprint do quadro. */
+  const setNoteSprint = useCallback(
+    (noteId: string, sprintId: string | null) => {
+      setSprintState((prev) => {
+        const current = prev.membership[noteId];
+        if (current === sprintId || (sprintId === null && !current)) return prev;
+        const membership = { ...prev.membership };
+        if (sprintId === null) delete membership[noteId];
+        else membership[noteId] = sprintId;
+        const next = { ...prev, membership };
+        persistSprints(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const addSprint = useCallback(
+    (title?: string): SprintColumn => {
+      const column: SprintColumn = {
+        id: makeId("sprint"),
+        title:
+          title?.trim() ||
+          `Sprint ${BASE_COLUMN_COUNT + sprintState.columns.length + 1}`,
+      };
+      commitSprints({
+        ...sprintState,
+        columns: [...sprintState.columns, column],
+      });
+      return column;
+    },
+    [sprintState, commitSprints]
+  );
+
+  const renameSprint = useCallback(
+    (id: string, title: string) => {
+      const value = title.trim();
+      if (!value) return;
+      commitSprints({
+        ...sprintState,
+        columns: sprintState.columns.map((c) =>
+          c.id === id ? { ...c, title: value } : c
+        ),
+      });
+    },
+    [sprintState, commitSprints]
+  );
+
+  const removeSprint = useCallback(
+    (id: string) => {
+      const membership: Record<string, string> = {};
+      for (const [noteId, sprintId] of Object.entries(sprintState.membership)) {
+        if (sprintId !== id) membership[noteId] = sprintId;
+      }
+      commitSprints({
+        columns: sprintState.columns.filter((c) => c.id !== id),
+        membership,
+      });
+    },
+    [sprintState, commitSprints]
+  );
+
   const createNote = useCallback(
     (input: NewNoteInput): Note => {
       if (isConvex) {
@@ -146,6 +276,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
               e instanceof Error ? e.message : "Erro ao criar anotação."
             );
           });
+        // Sprint nasce junto com a nota (vínculo é estado do quadro).
+        if (input.sprintId) setNoteSprint(optimistic.id, input.sprintId);
         return optimistic;
       }
 
@@ -164,6 +296,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         updatedBy: actor,
       };
       setLocalNotes((prev) => [note, ...prev]);
+      if (input.sprintId) setNoteSprint(note.id, input.sprintId);
       pushActivity({
         noteId: note.id,
         noteTitle: note.title,
@@ -172,14 +305,17 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
       return note;
     },
-    [isConvex, convexMutations, pushActivity, actor]
+    [isConvex, convexMutations, pushActivity, actor, setNoteSprint]
   );
 
   const updateNote = useCallback(
     (id: string, patch: Partial<NewNoteInput>) => {
+      // `sprintId` é vínculo do quadro: nunca vai para o servidor.
+      const { sprintId, ...serverPatch } = patch;
+      if (sprintId !== undefined) setNoteSprint(id, sprintId ?? null);
       if (isConvex) {
         void convexMutations
-          .updateNote(id, patch)
+          .updateNote(id, serverPatch)
           .catch((e: unknown) => {
             toast.showToast(
               "error",
@@ -208,16 +344,18 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         }
         return prev.map((n) =>
           n.id === id
-            ? { ...n, ...patch, updatedAt: nowIso(), updatedBy: actor }
+            ? { ...n, ...serverPatch, updatedAt: nowIso(), updatedBy: actor }
             : n
         );
       });
     },
-    [isConvex, convexMutations, pushActivity, actor]
+    [isConvex, convexMutations, pushActivity, actor, setNoteSprint]
   );
 
   const deleteNote = useCallback(
     (id: string) => {
+      // O vínculo com sprint mora no quadro: limpa nos dois modos.
+      setNoteSprint(id, null);
       if (isConvex) {
         void convexMutations
           .deleteNote(id)
@@ -250,7 +388,14 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   );
 
   const moveNote = useCallback(
-    (id: string, status: NoteStatus, beforeId?: string) => {
+    (
+      id: string,
+      status: NoteStatus,
+      beforeId?: string,
+      sprintId?: string | null
+    ) => {
+      // Vínculo com sprint é estado do quadro: aplica antes dos ramos de modo.
+      if (sprintId !== undefined) setNoteSprint(id, sprintId);
       // Recalcula a posição no cliente (mesma semântica da Sprint 5) e
       // envia ao servidor junto com o novo status (Sprint 8).
       const current = isConvex ? convexOrder : localOrder;
@@ -305,13 +450,18 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         );
       });
     },
-    [isConvex, convexOrder, localOrder, convexMutations, pushActivity, actor]
+    [isConvex, convexOrder, localOrder, convexMutations, pushActivity, actor, setNoteSprint]
   );
 
   const value: NotesContextValue = {
     notes,
     order,
     activity,
+    sprints: sprintState.columns,
+    sprintOf: sprintState.membership,
+    addSprint,
+    renameSprint,
+    removeSprint,
     isLoading,
     createNote,
     updateNote,

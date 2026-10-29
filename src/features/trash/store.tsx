@@ -41,6 +41,8 @@ type TrashContextValue = {
   remove: (id: string) => void;
   /** Esvazia a lixeira inteira. */
   empty: () => void;
+  /** Sprint 13: restaura todos os itens de uma vez. */
+  restoreAll: () => void;
   /** Envia um item para a lixeira (integração futura com exclusões reais). */
   addItem: (input: { title: string; kind: TrashKind }) => TrashItem;
 };
@@ -59,6 +61,7 @@ export function TrashProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const empty = useCallback(() => setItems([]), []);
+  const restoreAll = useCallback(() => setItems([]), []);
 
   const addItem = useCallback((input: { title: string; kind: TrashKind }) => {
     const item: TrashItem = {
@@ -72,7 +75,9 @@ export function TrashProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TrashContext.Provider value={{ items, restore, remove, empty, addItem }}>
+    <TrashContext.Provider
+      value={{ items, restore, remove, empty, restoreAll, addItem }}
+    >
       {children}
     </TrashContext.Provider>
   );

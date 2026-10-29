@@ -4,7 +4,7 @@ import { useAuth } from "../router/AppRouter";
 import { Logo } from "@/shared/components/Logo";
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25";
+  "mt-1 block w-full rounded-md border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-secondary focus:outline-none focus:ring-3 focus:ring-secondary/15";
 
 export default function AuthPage() {
   const { signIn } = useAuth();
@@ -75,7 +75,7 @@ export default function AuthPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-lg">
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-xl">
             <div className="flex border-b border-outline-variant/60">
               <button type="button" className={tabClass(mode === "signin")} onClick={() => setMode("signin")}>
                 Entrar
@@ -108,7 +108,7 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-on-brand shadow-lg shadow-brand/25 transition hover:bg-brand-glow disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center rounded-sm bg-brand px-4 py-2.5 text-sm font-semibold text-on-brand shadow-lg shadow-brand/25 transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60 focus-ring-brand"
               >
                 {loading ? "Entrando..." : mode === "signin" ? "Entrar" : "Criar conta"}
               </button>

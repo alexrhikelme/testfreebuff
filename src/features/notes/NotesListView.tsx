@@ -1,5 +1,6 @@
 import { useNotes } from "./store";
 import { StatusSelect } from "./NoteStatusChip";
+import { RichContentView } from "./RichText";
 import { getDeadlineState, describeDeadline } from "./deadline";
 import { formatDate } from "./format";
 import type { Note } from "./types";
@@ -55,7 +56,10 @@ export function NotesListView({
                 <td className="max-w-[220px] px-4 py-3">
                   <p className="truncate font-medium text-on-surface">{note.title}</p>
                   {note.content && (
-                    <p className="truncate text-xs text-on-surface-variant">{note.content}</p>
+                    <RichContentView
+                      html={note.content}
+                      className="truncate text-xs text-on-surface-variant"
+                    />
                   )}
                 </td>
                 <td className="px-4 py-3">

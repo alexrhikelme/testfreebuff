@@ -4,4 +4,5 @@ export { default as AppShellPage } from "./AppShellPage";
 export { default as DashboardOverviewPage } from "./DashboardOverviewPage";
 export { default as NotesPage } from "./NotesPage";
 export { default as DashboardsPage } from "./DashboardsPage";
+export { default as ProjectsPage } from "./ProjectsPage";
 export { default as TeamPage } from "./TeamPage";

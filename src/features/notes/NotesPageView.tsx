@@ -12,6 +12,7 @@ import {
 } from "./NoteStatusChip";
 import { NotesBoardView } from "./NotesBoardView";
 import { NotesListView } from "./NotesListView";
+import { NoteContent, RichTextEditor } from "./RichText";
 import { formatDayMonth, formatPeriodShort, noteCode } from "./format";
 import {
   describeDeadline,
@@ -88,8 +89,17 @@ function ViewIcon({ mode }: { mode: NoteViewMode }) {
   );
 }
 
-export function NotesPageView() {
-  const { notes, createNote, updateNote, deleteNote, isLoading } = useNotes();
+export function NotesPageView({ projectId }: { projectId?: string } = {}) {
+  const { notes: allNotes, createNote, updateNote, deleteNote, sprintOf, isLoading } =
+    useNotes();
+  /** No escopo de projeto, só as notas vinculadas a ele. */
+  const notes = useMemo(
+    () =>
+      projectId
+        ? allNotes.filter((n) => n.dashboardId === projectId)
+        : allNotes,
+    [allNotes, projectId]
+  );
   const toast = useToast();
   const [query, setQuery] = useState("");
   /** Tick para recomputar "há X min" e o pulso de alteração recente. */
@@ -106,8 +116,10 @@ export function NotesPageView() {
   const [viewMode, setViewMode] = useState<NoteViewMode>("kanban");
   const [editing, setEditing] = useState<Note | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  /** Status inicial quando o "+" de uma coluna abre o formulário. */
+  /** Status inicial quando o "+" de uma coluna base abre o formulário. */
   const [defaultStatus, setDefaultStatus] = useState<NoteStatus | undefined>();
+  /** Sprint do quadro quando o "+" de um sprint abre o formulário. */
+  const [defaultSprintId, setDefaultSprintId] = useState<string | undefined>();
   /** Sprint 10 (H3): nota aguardando confirmação de exclusão. */
   const [pendingDelete, setPendingDelete] = useState<Note | null>(null);
 
@@ -199,15 +211,17 @@ export function NotesPageView() {
         ? "Em Execução"
         : "Planejamento";
 
-  const openNewNote = (status?: NoteStatus) => {
+  const openNewNote = (target?: { status?: NoteStatus; sprintId?: string }) => {
     setEditing(null);
-    setDefaultStatus(status);
+    setDefaultStatus(target?.status);
+    setDefaultSprintId(target?.sprintId);
     setFormOpen(true);
   };
 
   const openEditNote = (note: Note) => {
     setEditing(note);
     setDefaultStatus(undefined);
+    setDefaultSprintId(undefined);
     setFormOpen(true);
   };
 
@@ -242,7 +256,7 @@ export function NotesPageView() {
             </p>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
               <h1 className="font-display text-2xl font-semibold tracking-tight text-on-surface">
-                Anotações
+                Kanban
               </h1>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-tertiary/40 bg-tertiary/15 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-tertiary" />
@@ -259,8 +273,9 @@ export function NotesPageView() {
               </span>
             </div>
             <p className="mt-1 text-sm text-on-surface-variant">
-              Crie, edite e acompanhe as anotações ativas da equipe em quadro,
-              grade ou lista.
+              {projectId
+                ? "Anotações deste projeto: crie, edite e acompanhe o trabalho da equipe em quadro, grade ou lista."
+                : "Crie, edite e acompanhe as anotações ativas da equipe em quadro, grade ou lista."}
             </p>
           </div>
         </div>
@@ -268,17 +283,17 @@ export function NotesPageView() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-3 rounded-xl border border-outline-variant/40 bg-surface-container-lowest px-3.5 py-2 text-xs font-medium">
             <span className="inline-flex items-center gap-1.5 text-brand-glow">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+              <span className="h-2 w-2 rounded-full bg-brand" />
               {counts.not_started + counts.in_progress} ativas
             </span>
             <span className="h-3 w-px bg-outline-variant/50" aria-hidden="true" />
             <span className="inline-flex items-center gap-1.5 text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-tertiary" />
+              <span className="h-2 w-2 rounded-full bg-tertiary" />
               {counts.completed} concluídas
             </span>
             <span className="h-3 w-px bg-outline-variant/50" aria-hidden="true" />
             <span className="inline-flex items-center gap-1.5 text-red-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-error" />
+              <span className="h-2 w-2 rounded-full bg-error" />
               {counts.blocked} bloqueadas
             </span>
           </div>
@@ -291,12 +306,12 @@ export function NotesPageView() {
         </div>
       </div>
 
-      <div className="mb-5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-3 shadow-sm">
+      <div className="mb-5 rounded-lg border border-outline-variant/30 bg-surface-container-low p-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           <div
             role="tablist"
             aria-label="Visualização"
-            className="flex flex-wrap gap-1 rounded-lg bg-surface-container/70 p-1"
+            className="flex flex-wrap gap-1 rounded-md bg-surface-container/70 p-1"
           >
             {VIEW_ORDER.map((mode) => (
               <button
@@ -306,7 +321,7 @@ export function NotesPageView() {
                 aria-selected={viewMode === mode}
                 onClick={() => setViewMode(mode)}
                 className={
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition " +
+                  "inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition focus-ring-brand " +
                   (viewMode === mode
                     ? "bg-brand text-on-brand shadow-sm"
                     : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface")
@@ -325,7 +340,7 @@ export function NotesPageView() {
               aria-label="Buscar cartões ou notas"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 sm:w-56"
+              className="w-full rounded-sm border border-outline-variant bg-surface-container px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-secondary focus:outline-none focus:ring-3 focus:ring-secondary/15 sm:w-56"
             />
 
             <label className="relative inline-flex items-center">
@@ -392,12 +407,10 @@ export function NotesPageView() {
                   </option>
                 ))}
               </select>
-            </label>
-
-            <button
+            </label>              <button
               type="button"
               onClick={() => openNewNote()}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-on-brand transition hover:bg-brand-strong active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-sm bg-brand px-3.5 py-2 text-sm font-semibold text-on-brand transition hover:bg-brand-strong active:scale-[0.98] focus-ring-brand"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -514,6 +527,8 @@ export function NotesPageView() {
         <NoteFormModal
           note={editing}
           defaultStatus={defaultStatus}
+          defaultSprintId={defaultSprintId}
+          defaultDashboardId={projectId}
           onClose={() => setFormOpen(false)}
         />
       )}
@@ -539,6 +554,8 @@ export function NotesPageView() {
                   startDate: target.startDate,
                   dueDate: target.dueDate,
                   dashboardId: target.dashboardId,
+                  // Desfazer devolve a nota para o sprint de onde saiu.
+                  sprintId: sprintOf[target.id],
                 });
               },
             });
@@ -624,11 +641,7 @@ function NoteCard({
         {note.title}
       </h3>
 
-      {note.content && (
-        <p className="mt-2 line-clamp-2 text-sm text-on-surface-variant">
-          {note.content}
-        </p>
-      )}
+      <NoteContent note={note} />
 
       <DeadlineBadges note={note} />
 
@@ -715,10 +728,16 @@ function DeadlineBadges({ note }: { note: Note }) {
 function NoteFormModal({
   note,
   defaultStatus,
+  defaultSprintId,
+  defaultDashboardId,
   onClose,
 }: {
   note: Note | null;
   defaultStatus?: NoteStatus;
+  /** Sprint do quadro em que a nota nova será criada. */
+  defaultSprintId?: string;
+  /** Projeto da rota: notas novas já nascem vinculadas a ele. */
+  defaultDashboardId?: string;
   onClose: () => void;
 }) {
   const { createNote, updateNote } = useNotes();
@@ -732,7 +751,9 @@ function NoteFormModal({
   const [assignee, setAssignee] = useState(note?.assignee ?? "");
   const [startDate, setStartDate] = useState(note?.startDate ?? "");
   const [dueDate, setDueDate] = useState(note?.dueDate ?? "");
-  const [dashboardId, setDashboardId] = useState(note?.dashboardId ?? "");
+  const [dashboardId, setDashboardId] = useState(
+    note?.dashboardId ?? defaultDashboardId ?? ""
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleStartDateChange = (value: string) => {
@@ -772,7 +793,7 @@ function NoteFormModal({
     if (note) {
       updateNote(note.id, payload);
     } else {
-      createNote(payload);
+      createNote({ ...payload, sprintId: defaultSprintId });
     }
     onClose();
   };
@@ -835,12 +856,12 @@ function NoteFormModal({
             <label className="block text-sm font-medium text-on-surface">
               Conteúdo
             </label>
-            <textarea
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={3}
+              onChange={setContent}
+              ariaLabel="Conteúdo da anotação"
               placeholder="Detalhes da tarefa..."
-              className="mt-1 block w-full rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+              minHeight="min-h-[96px]"
             />
           </div>
 

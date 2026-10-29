@@ -4,15 +4,14 @@ import { Logo } from "@/shared/components/Logo";
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-on-background">
-      {/* Glow de fundo laranja */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(1000px 500px at 50% -10%, rgba(232,93,4,0.14), transparent 60%)",
-        }}
-      />
+      {/* Glow de fundo laranja */}          <div
+            aria-hidden="true"
+            className="pointer-events-none fixed inset-0 z-0"
+            style={{
+              background:
+                "radial-gradient(1000px 500px at 50% -10%, rgba(232, 93, 4, 0.16), transparent 60%)",
+            }}
+          />
 
       <header className="relative z-10 border-b border-outline-variant/50 bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -48,13 +47,13 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/auth"
-              className="inline-flex items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-on-brand shadow-lg shadow-brand/30 transition hover:bg-brand-glow active:scale-[0.98]"
+              className="inline-flex items-center justify-center rounded-sm bg-brand px-5 py-2.5 text-sm font-semibold text-on-brand shadow-lg shadow-brand/30 transition hover:bg-brand-strong active:scale-[0.98]"
             >
               Começar agora
             </Link>
             <Link
               to="/app"
-              className="inline-flex items-center justify-center rounded-lg border border-outline px-5 py-2.5 text-sm font-medium text-on-surface transition hover:border-brand hover:text-brand"
+              className="inline-flex items-center justify-center rounded-sm border border-outline px-5 py-2.5 text-sm font-medium text-on-surface transition hover:border-brand hover:text-brand"
             >
               Ver demonstração
             </Link>
@@ -104,7 +103,7 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-xl border border-outline-variant bg-surface-container-lowest/60 p-5 text-left shadow-sm transition hover:border-brand/50">
+    <div className="rounded-lg border border-outline-variant bg-surface-container-lowest/60 p-5 text-left shadow-sm transition hover:border-brand/50">
       <h3 className="font-display text-base font-semibold text-on-surface">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">{description}</p>
     </div>

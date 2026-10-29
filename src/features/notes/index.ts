@@ -1,4 +1,5 @@
-export type { Note, NoteStatus } from "./types";
+export type { Note, NoteStatus, SprintColumn } from "./types";
+export { BASE_COLUMN_COUNT } from "./types";
 export { NotesProvider, useNotes } from "./store";
 export {
   NoteStatusChip,

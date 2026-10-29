@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNotes } from "./store";
-import { STATUS_LABEL, sortNotesForColumn } from "./NoteStatusChip";
+import { sortNotesForColumn } from "./NoteStatusChip";
 import { NoteStatusChip } from "./NoteStatusChip";
 import { getDeadlineState, describeDeadline, deadlineBadgeClasses } from "./deadline";
 import {
@@ -12,6 +12,8 @@ import {
   tagClasses,
 } from "./format";
 import type { Note, NoteStatus } from "./types";
+import { NoteContent } from "./RichText";
+import { ConfirmDialog } from "@/shared/components/ConfirmDialog";
 
 /**
  * Sprint 5 — Kanban por status com drag-and-drop nativo (HTML5).
@@ -19,6 +21,11 @@ import type { Note, NoteStatus } from "./types";
  *
  * Sprint 12 — ordem e acabamento do mockup do board: colunas com ponto
  * colorido, contadores, alta por coluna e rodapé "Adicionar nota".
+ *
+ * Montagem de sprints — o quadro não é mais limitado a 4 colunas: além das
+ * 4 base (os status da nota) o usuário cria, renomeia e exclui sprints
+ * quantos quiser. Cada sprint é uma coluna; a nota guarda o vínculo no
+ * store (sprintOf) e, ao sair do sprint, volta para a coluna do seu status.
  */
 const BOARD_ORDER: NoteStatus[] = [
   "not_started",
@@ -29,7 +36,7 @@ const BOARD_ORDER: NoteStatus[] = [
 
 const COLUMN_DOT: Record<NoteStatus, string> = {
   not_started: "bg-slate-400",
-  in_progress: "bg-sky-400",
+  in_progress: "bg-brand-glow",
   blocked: "bg-error",
   completed: "bg-tertiary",
 };
@@ -41,6 +48,50 @@ const CODE_CLASSES: Record<NoteStatus, string> = {
   completed: "text-emerald-400",
 };
 
+/**
+ * Pente fino (item 8) — títulos das colunas base do Kanban renomeáveis.
+ * Padrão "Sprint 1…4" no lugar de "Não iniciada, em andamento…";
+ * clique no título edita e fica salvo (localStorage).
+ */
+const COLUMN_DEFAULT_TITLES: Record<NoteStatus, string> = {
+  not_started: "Sprint 1",
+  in_progress: "Sprint 2",
+  blocked: "Sprint 3",
+  completed: "Sprint 4",
+};
+
+/** Coluna criada pelo usuário: mesmo tratamento visual das base. */
+const SPRINT_DOT = "bg-secondary";
+const SPRINT_BADGE = "bg-secondary/15 text-sky-300";
+
+const TITLES_STORAGE_KEY = "kanban-column-titles";
+
+function loadColumnTitles(): Partial<Record<NoteStatus, string>> {
+  try {
+    const raw = window.localStorage.getItem(TITLES_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<Record<NoteStatus, string>>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Coluna do quadro: base (status) ou sprint criado pelo usuário. */
+type BoardColumn = {
+  /** Chave da coluna: nome do status ou id do sprint. */
+  key: string;
+  title: string;
+  isBase: boolean;
+  status?: NoteStatus;
+  sprintId?: string;
+  dotClass: string;
+  badgeClass: string;
+};
+
+/** A chave identifica uma das 4 colunas base (os status)? */
+function isBaseColumnKey(key: string): key is NoteStatus {
+  return key in COLUMN_DEFAULT_TITLES;
+}
+
 export function NotesBoardView({
   notes,
   onEdit,
@@ -50,74 +101,217 @@ export function NotesBoardView({
   notes: Note[];
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void;
-  /** Abre o formulário já com o status da coluna (botões "+" / "Adicionar nota"). */
-  onAddNote?: (status: NoteStatus) => void;
+  /**
+   * Abre o formulário já com o destino da nota: o status da coluna base ou
+   * o sprint em que o "+" foi clicado.
+   */
+  onAddNote?: (target: { status?: NoteStatus; sprintId?: string }) => void;
 }) {
-  const { moveNote, order } = useNotes();
-  const [dragOverColumn, setDragOverColumn] = useState<NoteStatus | null>(null);
+  const { moveNote, order, sprints, sprintOf, addSprint, renameSprint, removeSprint } =
+    useNotes();
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  /** Títulos customizados das colunas base (Sprint 1…4 por padrão). */
+  const [customTitles, setCustomTitles] = useState<
+    Partial<Record<NoteStatus, string>>
+  >(loadColumnTitles);
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const [titleDraft, setTitleDraft] = useState("");
+  /** Sprint aguardando confirmação de exclusão (as notas são preservadas). */
+  const [pendingDelete, setPendingDelete] = useState<BoardColumn | null>(null);
 
-  const byStatus = new Map<NoteStatus, Note[]>();
-  for (const s of BOARD_ORDER) byStatus.set(s, []);
-  for (const n of notes) byStatus.get(n.status)?.push(n);
+  const baseColumns: BoardColumn[] = BOARD_ORDER.map((status) => ({
+    key: status,
+    status,
+    isBase: true,
+    title: customTitles[status] || COLUMN_DEFAULT_TITLES[status],
+    dotClass: COLUMN_DOT[status],
+    badgeClass:
+      status === "in_progress"
+        ? "bg-brand/20 text-brand-glow"
+        : status === "blocked"
+          ? "bg-error/20 text-red-300"
+          : status === "completed"
+            ? "bg-tertiary/20 text-emerald-300"
+            : "bg-surface-container-high text-on-surface-variant",
+  }));
 
-  const handleDrop = (status: NoteStatus) => (e: React.DragEvent) => {
+  const sprintColumns: BoardColumn[] = sprints.map((s) => ({
+    key: s.id,
+    sprintId: s.id,
+    isBase: false,
+    title: s.title,
+    dotClass: SPRINT_DOT,
+    badgeClass: SPRINT_BADGE,
+  }));
+
+  const columns = [...baseColumns, ...sprintColumns];
+
+  const startRename = (col: BoardColumn) => {
+    setTitleDraft(col.title);
+    setEditingTitle(col.key);
+  };
+
+  const commitRename = () => {
+    const key = editingTitle;
+    setEditingTitle(null);
+    if (!key) return;
+    const value = titleDraft.trim();
+    if (!value) return;
+    if (isBaseColumnKey(key)) {
+      setCustomTitles((prev) => {
+        const next = { ...prev, [key]: value };
+        try {
+          window.localStorage.setItem(TITLES_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // storage indisponível: mantém só o estado em memória
+        }
+        return next;
+      });
+      return;
+    }
+    renameSprint(key, value);
+  };
+
+  /** Cria um sprint e abre o campo de título já preenchido para renomear. */
+  const handleAddSprint = () => {
+    const column = addSprint();
+    setTitleDraft(column.title);
+    setEditingTitle(column.id);
+  };
+
+  /** Distribui cada nota na sua coluna: sprint válido ou coluna de status. */
+  const sprintKeys = new Set(sprints.map((s) => s.id));
+  const byColumn = new Map<string, Note[]>();
+  for (const col of columns) byColumn.set(col.key, []);
+  for (const n of notes) {
+    const sprintId = sprintOf[n.id];
+    const key = sprintId && sprintKeys.has(sprintId) ? sprintId : n.status;
+    byColumn.get(key)?.push(n);
+  }
+
+  const handleDrop = (col: BoardColumn) => (e: React.DragEvent) => {
     e.preventDefault();
     setDragOverColumn(null);
     const id = e.dataTransfer.getData("text/note-id");
     if (!id) return;
     // Calcula sobre qual card caiu para inserir antes dele.
-    const column = byStatus.get(status) ?? [];
+    const column = byColumn.get(col.key) ?? [];
     const sorted = sortNotesForColumn(column, order);
     const afterId = getDropTargetId(e, sorted);
-    moveNote(id, status, afterId ?? undefined);
+    // Coluna de sprint mantém o status da nota; coluna base troca o status
+    // e desvincula o sprint (null → volta para as colunas de status).
+    const note = notes.find((n) => n.id === id);
+    const status = col.status ?? note?.status ?? "not_started";
+    moveNote(id, status, afterId ?? undefined, col.isBase ? null : col.sprintId);
   };
 
   return (
-    <div className="grid gap-4 overflow-x-auto pb-2 md:grid-cols-2 xl:grid-cols-4">
-      {BOARD_ORDER.map((status) => {
-        const columnNotes = sortNotesForColumn(byStatus.get(status) ?? [], order);
-        const isOver = dragOverColumn === status;
-        return (
-          <section
-            key={status}
-            aria-label={`Coluna ${STATUS_LABEL[status]}`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOverColumn(status);
-            }}
-            onDragLeave={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                setDragOverColumn((cur) => (cur === status ? null : cur));
+    <div>
+      <div className="flex gap-4 overflow-x-auto pb-2">
+        {columns.map((col) => {
+          const columnNotes = sortNotesForColumn(byColumn.get(col.key) ?? [], order);
+          const isOver = dragOverColumn === col.key;
+          return (
+            <section
+              key={col.key}
+              aria-label={`Coluna ${col.title}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverColumn(col.key);
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setDragOverColumn((cur) => (cur === col.key ? null : cur));
+                }
+              }}
+              onDrop={handleDrop(col)}
+              className={
+                "flex min-h-[280px] min-w-[280px] flex-1 flex-col rounded-lg border p-3 shadow-sm transition " +
+                (isOver
+                  ? "border-brand/60 bg-brand/5 ring-2 ring-brand/30"
+                  : "border-outline-variant/30 bg-surface-container-low")
               }
-            }}
-            onDrop={handleDrop(status)}
-            className={
-              "flex min-h-[280px] flex-col rounded-xl border p-3 transition " +
-              (isOver
-                ? "border-brand/60 bg-brand/5 ring-2 ring-brand/30"
-                : "border-outline-variant/30 bg-surface/40")
-            }
-          >
-            <header className="mb-3 flex items-center gap-2 px-1">
-              <span
-                className={`h-2.5 w-2.5 shrink-0 rounded-full ${COLUMN_DOT[status]}`}
-                aria-hidden="true"
-              />
-              <h3 className="text-sm font-semibold text-on-surface">
-                {STATUS_LABEL[status]}
+            >
+              <header className="mb-3 flex items-center gap-2 px-1">
+                <span
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${col.dotClass}`}
+                  aria-hidden="true"
+                />
+                <h3 className="min-w-0 text-sm font-semibold text-on-surface">
+                {editingTitle === col.key ? (
+                  <input
+                    autoFocus
+                    value={titleDraft}
+                    aria-label={`Renomear coluna ${col.title}`}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onBlur={commitRename}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitRename();
+                      if (e.key === "Escape") setEditingTitle(null);
+                    }}
+                    className="w-36 rounded border border-brand/60 bg-surface-container-lowest px-1.5 py-0.5 text-sm font-semibold text-on-surface focus:outline-none focus:ring-2 focus:ring-brand/30"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    title="Clique para editar o título da coluna"
+                    onClick={() => startRename(col)}
+                    className="group/hdr flex max-w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-sm font-semibold text-on-surface transition hover:bg-surface-container focus-ring-brand"
+                  >
+                    <span className="truncate">{col.title}</span>
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="shrink-0 text-on-surface-variant/50 opacity-0 transition group-hover/hdr:opacity-100"
+                    >
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
+                )}
               </h3>
-              <span className="ml-auto flex items-center gap-1.5">
-                <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-medium text-on-surface-variant">
+              <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                <span
+                  className={
+                    "rounded-sm px-2 py-0.5 text-xs font-semibold " +
+                    col.badgeClass
+                  }
+                >
                   {columnNotes.length}
                 </span>
+                {!col.isBase && (
+                  <button
+                    type="button"
+                    onClick={() => setPendingDelete(col)}
+                    aria-label={`Excluir sprint ${col.title}`}
+                    title={`Excluir sprint ${col.title}`}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-error/10 hover:text-error"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => onAddNote?.(status)}
-                  aria-label={`Adicionar nota em ${STATUS_LABEL[status]}`}
-                  title={`Adicionar nota em ${STATUS_LABEL[status]}`}
+                  onClick={() =>
+                    onAddNote?.(
+                      col.isBase ? { status: col.status } : { sprintId: col.sprintId }
+                    )
+                  }
+                  aria-label={`Adicionar nota em ${col.title}`}
+                  title={`Adicionar nota em ${col.title}`}
                   className="inline-flex h-6 w-6 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
@@ -141,10 +335,14 @@ export function NotesBoardView({
               ))}
               <button
                 type="button"
-                onClick={() => onAddNote?.(status)}
+                onClick={() =>
+                  onAddNote?.(
+                    col.isBase ? { status: col.status } : { sprintId: col.sprintId }
+                  )
+                }
                 className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-outline-variant/50 px-3 py-2 text-xs font-medium text-on-surface-variant transition hover:border-brand/50 hover:text-brand-glow"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
@@ -154,6 +352,32 @@ export function NotesBoardView({
           </section>
         );
       })}
+
+        {/* Montagem de sprints: cria uma nova coluna no quadro. */}
+        <button
+          type="button"
+          onClick={handleAddSprint}
+          className="flex w-[220px] shrink-0 flex-col items-center justify-center gap-2 self-stretch rounded-lg border border-dashed border-outline-variant/50 bg-surface-container-low/50 p-4 text-sm font-medium text-on-surface-variant transition hover:border-brand/60 hover:bg-brand/5 hover:text-brand-glow"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Nova sprint
+        </button>
+      </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Excluir sprint?"
+          description={`“${pendingDelete.title}” sai do quadro. As anotações voltam para as colunas de status — nenhuma é apagada.`}
+          onConfirm={() => {
+            removeSprint(pendingDelete.key);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }
@@ -187,6 +411,8 @@ function BoardCard({
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void;
 }) {
+  /** Edição inline da descrição desativa o drag do card. */
+  const [contentEditing, setContentEditing] = useState(false);
   const state = getDeadlineState(note);
   const meta = deadlineBadgeClasses(state);
   const label =
@@ -199,16 +425,16 @@ function BoardCard({
   return (
     <article
       data-note-id={note.id}
-      draggable
+      draggable={!contentEditing}
       onDragStart={(e) => {
         e.dataTransfer.setData("text/note-id", note.id);
         e.dataTransfer.effectAllowed = "move";
       }}
       className={
-        "group cursor-grab rounded-lg border bg-surface-container-lowest p-3 shadow-sm transition active:cursor-grabbing " +
+        "group cursor-grab rounded-md border bg-surface-container-lowest p-3 shadow-brand/5 transition hover:-translate-y-0.5 hover:shadow-lg active:cursor-grabbing " +
         (isOverdue || isBlocked
-          ? "border-error/50 hover:shadow-md"
-          : "border-outline-variant/30 hover:border-outline-variant/60 hover:shadow-md")
+          ? "border-error/50 hover:border-error/70"
+          : "border-outline-variant/30 hover:border-outline-variant/60")
       }
     >
       <div className="flex items-center justify-between gap-2">
@@ -224,17 +450,7 @@ function BoardCard({
         {note.title}
       </h4>
 
-      {note.content &&
-        (isBlocked ? (
-          <div className="mt-1.5 rounded border border-error/40 bg-error/10 p-2 text-xs leading-relaxed text-red-300">
-            <span className="font-semibold text-red-200">Bloqueio:</span>{" "}
-            {note.content}
-          </div>
-        ) : (
-          <p className="mt-1.5 line-clamp-2 text-xs text-on-surface-variant">
-            {note.content}
-          </p>
-        ))}
+      <NoteContent note={note} onEditingChange={setContentEditing} />
 
       {meta && label && (
         <span

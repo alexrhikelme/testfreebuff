@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "biome check .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify": "biome check . && tsc -b --noEmit && vitest run"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.95",

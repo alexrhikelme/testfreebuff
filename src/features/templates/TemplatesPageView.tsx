@@ -9,11 +9,17 @@ import {
 import { useNotes } from "@/features/notes";
 import { useToast } from "@/shared/components/Toast";
 
+/**
+ * Sprint 13 — Templates redesignado ao mockup "Templates":
+ * header com título e CTA "Criar Modelo", abas de categoria (incluindo
+ * Jogos & VR), busca e grid de cartões com categoria à direita e CTA
+ * "Usar modelo →" no rodapé.
+ */
 type Filter = "todos" | TemplateTab;
 
 const TABS: Filter[] = ["todos", "gestao", "documentos", "design", "jogos"];
 
-export function TemplatesPageView() {
+export function TemplatesPageView({ projectId }: { projectId?: string } = {}) {
   const navigate = useNavigate();
   const { createNote } = useNotes();
   const { showToast } = useToast();
@@ -39,24 +45,22 @@ export function TemplatesPageView() {
   const useTemplate = (t: Template) => {
     createNote({ title: t.title, content: t.body, tags: ["template"] });
     showToast("success", `Modelo “${t.title}” aplicado — nova anotação criada.`);
-    navigate("/app/notes");
+    // Nota criada dentro de um projeto nasce no quadro daquele projeto.
+    navigate(projectId ? `/app/p/${projectId}/notes` : "/app/notes");
   };
 
   return (
     <div>
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 pb-5">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-on-surface">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-on-surface">
             Templates
           </h1>
-          <p className="mt-1 text-sm text-on-surface-variant">
-            Modelos padronizados para iniciar sprints, documentações e pesquisas com agilidade.
-          </p>
         </div>
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-on-brand transition hover:bg-brand-strong active:scale-[0.98]"
+          className="inline-flex items-center gap-2 rounded-sm bg-brand px-4 py-2.5 text-sm font-medium text-on-brand transition hover:bg-brand-strong active:scale-[0.98] focus-ring-brand"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -66,8 +70,8 @@ export function TemplatesPageView() {
         </button>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/30 pb-5">
+        <div className="flex flex-wrap items-center gap-2">
           {TABS.map((f) => (
             <button
               key={f}
@@ -75,10 +79,10 @@ export function TemplatesPageView() {
               onClick={() => setTab(f)}
               aria-pressed={tab === f}
               className={
-                "rounded-lg px-3.5 py-2 text-sm font-medium transition " +
+                "rounded-sm px-3.5 py-2 text-sm font-medium transition " +
                 (tab === f
-                  ? "bg-surface-container text-on-surface ring-1 ring-outline-variant/60"
-                  : "text-on-surface-variant hover:text-on-surface")
+                  ? "bg-brand text-on-brand"
+                  : "bg-surface-container text-on-surface-variant hover:text-on-surface")
               }
             >
               {f === "todos" ? "Todos" : TAB_LABEL[f]}
@@ -105,13 +109,13 @@ export function TemplatesPageView() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar template..."
             aria-label="Buscar template"
-            className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest py-2.5 pl-9 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+            className="w-full rounded-sm border border-outline-variant bg-surface-container py-2.5 pl-9 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-secondary focus:outline-none focus:ring-3 focus:ring-secondary/15"
           />
         </div>
       </div>
 
       {visible.length === 0 ? (
-        <div className="rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-6 py-12 text-center">
+        <div className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-6 py-12 text-center">
           <p className="text-sm font-medium text-on-surface">Nenhum template encontrado.</p>
           <p className="mt-1 text-sm text-on-surface-variant">
             Tente outro termo ou crie um novo modelo.
@@ -122,18 +126,18 @@ export function TemplatesPageView() {
           {visible.map((t) => (
             <article
               key={t.id}
-              className="flex flex-col rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-5 transition hover:border-brand/40 hover:shadow-lg hover:shadow-brand/5"
+              className="flex min-h-[300px] flex-col rounded-lg border border-outline-variant/40 bg-surface-container-lowest p-5 shadow-brand/5 transition hover:-translate-y-0.5 hover:border-brand/50 hover:shadow-lg"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand-glow ring-1 ring-brand/20">
+                <span className="flex h-9 w-9 items-center justify-center rounded-sm bg-brand/10 text-brand-glow ring-1 ring-brand/25">
                   <TemplateIcon name={t.icon} />
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
+                <span className="text-[13px] font-medium tracking-wide text-on-surface-variant">
                   {t.categoryLabel}
                 </span>
               </div>
 
-              <h2 className="font-display text-base font-semibold text-on-surface">
+              <h2 className="text-lg font-bold leading-snug text-on-surface">
                 {t.title}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
@@ -141,11 +145,11 @@ export function TemplatesPageView() {
               </p>
 
               <div className="mt-auto flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-4">
-                <span className="truncate text-xs text-on-surface-variant">{t.author}</span>
+                <span className="truncate text-sm text-on-surface-variant">{t.author}</span>
                 <button
                   type="button"
                   onClick={() => useTemplate(t)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-container px-3 py-1.5 text-sm font-medium text-on-surface ring-1 ring-outline-variant/50 transition hover:border-brand hover:ring-brand/50"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-surface-container px-4 py-2 text-sm font-semibold text-on-surface ring-1 ring-outline-variant/60 transition hover:border-brand hover:text-brand-glow hover:ring-brand/50 focus-ring-brand"
                 >
                   Usar modelo
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -205,36 +209,43 @@ function CreateTemplateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-md rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-6 shadow-xl">
-        <h2 className="font-display text-lg font-semibold text-on-surface">Criar Modelo</h2>
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-md rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-6 shadow-xl"
+      >
+        <h2 className="text-lg font-bold text-on-surface">Criar Modelo</h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-on-surface">Título</label>
+            <label htmlFor="tpl-title" className="block text-sm font-medium text-on-surface">Título</label>
             <input
+              id="tpl-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Plano de Testes de Campo"
               autoFocus
-              className="mt-1 block w-full rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+              className="mt-1 block w-full rounded-sm border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-secondary focus:outline-none focus:ring-3 focus:ring-secondary/15"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-on-surface">Descrição</label>
+            <label htmlFor="tpl-desc" className="block text-sm font-medium text-on-surface">Descrição</label>
             <textarea
+              id="tpl-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="Para que serve este modelo?"
-              className="mt-1 block w-full resize-none rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+              className="mt-1 block w-full resize-none rounded-sm border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-secondary focus:outline-none focus:ring-3 focus:ring-secondary/15"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-on-surface">Categoria</label>
+            <label htmlFor="tpl-tab" className="block text-sm font-medium text-on-surface">Categoria</label>
             <select
+              id="tpl-tab"
               value={tab}
               onChange={(e) => setTab(e.target.value as TemplateTab)}
-              className="mt-1 block w-full rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:border-brand focus:outline-none [&>option]:bg-surface-container-lowest [&>option]:text-on-surface"
+              className="mt-1 block w-full rounded-sm border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface focus:border-secondary focus:outline-none [&>option]:bg-surface-container-lowest [&>option]:text-on-surface"
             >
               {(["gestao", "documentos", "design", "jogos"] as TemplateTab[]).map((t) => (
                 <option key={t} value={t}>
@@ -248,13 +259,13 @@ function CreateTemplateModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface transition hover:bg-surface-container"
+              className="rounded-sm border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface transition hover:bg-surface-container"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-on-brand transition hover:bg-brand-strong"
+              className="rounded-sm bg-brand px-4 py-2 text-sm font-medium text-on-brand transition hover:bg-brand-strong"
             >
               Criar
             </button>

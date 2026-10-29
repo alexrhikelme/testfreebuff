@@ -8,4 +8,5 @@ export {
   type Dashboard,
 } from "./store";
 export { DashboardsPageView } from "./DashboardsPageView";
+export { ActiveProjectsPageView } from "./ActiveProjectsPageView";
 export { TeamPageView } from "./TeamPageView";

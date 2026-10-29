@@ -14,6 +14,7 @@ import AppShellPage from "./pages/AppShellPage";
 import DashboardOverviewPage from "./pages/DashboardOverviewPage";
 import NotesPage from "./pages/NotesPage";
 import DashboardsPage from "./pages/DashboardsPage";
+import ProjectsPage from "./pages/ProjectsPage";
 import TeamPage from "./pages/TeamPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TemplatesPage from "./pages/TemplatesPage";
@@ -55,12 +56,27 @@ export default function App() {
                 <Route path="/app" element={<RequireAuth />}>
                   <Route element={<AppShellPage />}>
                     <Route index element={<DashboardOverviewPage />} />
+                    {/* Nível espaço de trabalho (atalhos e links antigos). */}
                     <Route path="notes" element={<NotesPage />} />
                     <Route path="dashboards" element={<DashboardsPage />} />
+                    {/* Projetos ativos: página dedicada com todos os projetos. */}
+                    <Route path="projects" element={<ProjectsPage />} />
                     <Route path="team" element={<TeamPage />} />
                     <Route path="documents" element={<DocumentsPage />} />
                     <Route path="templates" element={<TemplatesPage />} />
                     <Route path="trash" element={<TrashPage />} />
+
+                    {/* Projeto: todas as seções principais vivem DENTRO do
+                        projeto — cada rota escopa os dados ao projectId. */}
+                    <Route path="p/:projectId">
+                      <Route index element={<DashboardOverviewPage />} />
+                      <Route path="notes" element={<NotesPage />} />
+                      <Route path="dashboards" element={<DashboardsPage />} />
+                      <Route path="team" element={<TeamPage />} />
+                      <Route path="documents" element={<DocumentsPage />} />
+                      <Route path="templates" element={<TemplatesPage />} />
+                      <Route path="trash" element={<TrashPage />} />
+                    </Route>
                   </Route>
                 </Route>
 

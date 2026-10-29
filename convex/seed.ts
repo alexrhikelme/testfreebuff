@@ -20,6 +20,27 @@ export const seedIfEmpty = mutation({
 
     if (anyDashboard === null) {
       await ctx.db.insert("dashboards", {
+        id: "dash-q3",
+        name: "Q3 Product Launch",
+        description: "Go-to-market do Q3: pricing, ativação e campanha de lançamento.",
+        createdAt: "2026-09-01T09:00:00.000Z",
+        updatedAt: "2026-09-15T10:00:00.000Z",
+      });
+      await ctx.db.insert("dashboards", {
+        id: "dash-sprint42",
+        name: "Sprint 42 - Core Features",
+        description: "Entrega das funcionalidades núcleo planejadas na Sprint 42.",
+        createdAt: "2026-09-05T09:00:00.000Z",
+        updatedAt: "2026-09-14T10:00:00.000Z",
+      });
+      await ctx.db.insert("dashboards", {
+        id: "dash-design",
+        name: "Design System 2.0",
+        description: "Tokens, componentes e documentação do Design System 2.0.",
+        createdAt: "2026-09-07T09:00:00.000Z",
+        updatedAt: "2026-09-13T10:00:00.000Z",
+      });
+      await ctx.db.insert("dashboards", {
         id: "dash-seed-1",
         name: "Experimento A — Coleta",
         description: "Rotina de coleta e preparação de amostras.",

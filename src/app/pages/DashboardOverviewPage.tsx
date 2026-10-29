@@ -4,11 +4,31 @@ import { ActivityFeed } from "@/features/notes/ActivityFeed";
 import { useLab } from "@/features/dashboards/store";
 import { getDeadlineState, describeDeadline } from "@/features/notes/deadline";
 import { NoteStatusChip } from "@/features/notes/NoteStatusChip";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 export default function DashboardOverviewPage() {
-  const { notes } = useNotes();
+  /** Presente em /app/p/:projectId/* → a visão é do projeto, não do espaço. */
+  const { projectId } = useParams();
+  const { notes: allNotes } = useNotes();
   const { dashboards, members } = useLab();
+
+  const projectName = dashboards.find((d) => d.id === projectId)?.name;
+
+  /** No escopo de projeto, indicadores e listas são filtrados pelo projeto. */
+  const notes = useMemo(
+    () =>
+      projectId ? allNotes.filter((n) => n.dashboardId === projectId) : allNotes,
+    [allNotes, projectId]
+  );
+  const projectMembers = useMemo(
+    () =>
+      projectId ? members.filter((m) => m.dashboardId === projectId) : members,
+    [members, projectId]
+  );
+
+  /** Caminho de uma seção: dentro do projeto, ou no nível do espaço. */
+  const sectionPath = (seg: string) =>
+    projectId ? `/app/p/${projectId}/${seg}` : `/app/${seg}`;
 
   const counts = useMemo(() => {
     const byStatus = {
@@ -41,7 +61,9 @@ export default function DashboardOverviewPage() {
           Visão geral
         </h1>
         <p className="mt-1 text-sm text-on-surface-variant">
-          Resumo do trabalho do laboratório em tempo real.
+          {projectId
+            ? `Resumo do projeto “${projectName ?? projectId}” em tempo real.`
+            : "Resumo do trabalho do laboratório em tempo real."}
         </p>
       </div>
 
@@ -59,15 +81,15 @@ export default function DashboardOverviewPage() {
           accent={counts.overdue > 0 ? "error" : "tertiary"}
         />
         <StatCard
-          label="Dashboards"
-          value={dashboards.length}
-          description="Grupos de trabalho"
+          label={projectId ? "Notas" : "Dashboards"}
+          value={projectId ? notes.length : dashboards.length}
+          description={projectId ? "Neste projeto" : "Grupos de trabalho"}
           accent="primary"
         />
         <StatCard
           label="Membros"
-          value={members.length}
-          description="Pessoas com acesso"
+          value={projectMembers.length}
+          description={projectId ? "Neste projeto" : "Pessoas com acesso"}
           accent="tertiary"
         />
       </div>
@@ -94,6 +116,83 @@ export default function DashboardOverviewPage() {
         ))}
       </div>
 
+      {!projectId && (
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold text-on-surface">
+              Projetos ativos
+            </h2>
+            <Link
+              to="/app/projects"
+              className="text-sm font-medium text-brand-glow transition hover:underline"
+            >
+              Ver todos →
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {dashboards.map((d) => {
+              const dNotes = notes.filter((n) => n.dashboardId === d.id);
+              const openCount = dNotes.filter(
+                (n) => n.status !== "completed"
+              ).length;
+              const dMembers = members.filter(
+                (m) => m.dashboardId === d.id
+              ).length;
+              return (
+                <div
+                  key={d.id}
+                  className="group relative rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-lg hover:shadow-brand/5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-display text-sm font-semibold text-on-surface transition group-hover:text-brand-glow">
+                      {/* Stretched link: o card inteiro abre o projeto. */}
+                      <Link
+                        to={`/app/p/${d.id}`}
+                        aria-label={`Abrir projeto ${d.name}`}
+                        className="focus-ring-brand after:absolute after:inset-0 after:content-['']"
+                      >
+                        {d.name}
+                      </Link>
+                    </h3>
+                    <span className="shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand-glow">
+                      {openCount} abertas
+                    </span>
+                  </div>
+                  {d.description && (
+                    <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
+                      {d.description}
+                    </p>
+                  )}
+                  <p className="mt-3 text-[11px] text-on-surface-variant/80">
+                    {dNotes.length} nota{dNotes.length === 1 ? "" : "s"} ·{" "}
+                    {dMembers} membro{dMembers === 1 ? "" : "s"}
+                  </p>
+                  {/* Acesso rápido aos pontos principais do projeto. */}
+                  <div className="relative z-10 mt-3 flex flex-wrap gap-1.5 border-t border-outline-variant/30 pt-3">
+                    {(
+                      [
+                        ["notes", "Quadro"],
+                        ["documents", "Anotações"],
+                        ["team", "Equipe"],
+                      ] as const
+                    ).map(([seg, label]) => (
+                      <Link
+                        key={seg}
+                        to={`/app/p/${d.id}/${seg}`}
+                        aria-label={`${label} — ${d.name}`}
+                        className="rounded-md bg-surface-container px-2 py-1 text-[11px] font-medium text-on-surface-variant ring-1 ring-outline-variant/50 transition hover:bg-brand hover:text-on-brand hover:ring-brand/60"
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-on-surface">
@@ -103,8 +202,8 @@ export default function DashboardOverviewPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {QUICK_LINKS.map((q) => (
             <Link
-              key={q.to}
-              to={q.to}
+              key={q.seg}
+              to={sectionPath(q.seg)}
               className="group flex flex-col rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-lg hover:shadow-brand/5"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand-glow ring-1 ring-brand/20">
@@ -134,7 +233,7 @@ export default function DashboardOverviewPage() {
             Próximas tarefas
           </h2>
           <Link
-            to="/app/notes"
+            to={sectionPath("notes")}
             className="text-sm font-medium text-brand-glow transition hover:underline"
           >
             Ver todas →
@@ -216,25 +315,25 @@ function StatCard({
 /** Sprint 11: atalhos do dashboard para as janelas novas do workspace. */
 const QUICK_LINKS = [
   {
-    to: "/app/documents",
+    seg: "documents",
     title: "Minhas Anotações",
     description: "Documentos recentes, PRDs e checklists da equipe.",
     icon: "file-text" as const,
   },
   {
-    to: "/app/team",
+    seg: "team",
     title: "Equipe & Parceiros",
     description: "Times multidisciplinares, membros e convites.",
     icon: "users" as const,
   },
   {
-    to: "/app/templates",
+    seg: "templates",
     title: "Templates",
     description: "Modelos de sprints, documentos e pesquisa.",
     icon: "layers" as const,
   },
   {
-    to: "/app/trash",
+    seg: "trash",
     title: "Lixeira",
     description: "Itens excluídos: restaurar ou apagar definitivamente.",
     icon: "trash" as const,

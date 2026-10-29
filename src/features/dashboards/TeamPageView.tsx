@@ -92,9 +92,13 @@ function initials(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function TeamPageView() {
+export function TeamPageView({ projectId }: { projectId?: string } = {}) {
   const { members, dashboards, currentRole, addMember, updateMemberRole, removeMember } =
     useLab();
+  /** No escopo de projeto, só os membros vinculados a ele. */
+  const project = projectId
+    ? dashboards.find((d) => d.id === projectId)
+    : undefined;
   const { showToast } = useToast();
   const [inviting, setInviting] = useState(false);
   const [partners, setPartners] = useState<PartnerSeed[]>(SEED_PARTNERS);
@@ -114,14 +118,19 @@ export function TeamPageView() {
   }, [openMenu]);
 
   const rows: Row[] = useMemo(() => {
-    const fromStore: Row[] = members.map((m) => ({
-      id: m.id,
-      name: m.name,
-      email: m.email,
-      team: dashboards.find((d) => d.id === m.dashboardId)?.name ?? "—",
-      roleLabel: ROLE_LABEL[m.role],
-      storeRole: m.role,
-    }));
+    const fromStore: Row[] = members
+      .filter((m) => !projectId || m.dashboardId === projectId)
+      .map((m) => ({
+        id: m.id,
+        name: m.name,
+        email: m.email,
+        team: dashboards.find((d) => d.id === m.dashboardId)?.name ?? "—",
+        roleLabel: ROLE_LABEL[m.role],
+        storeRole: m.role,
+      }));
+    // Parceiros e equipes multidisciplinares pertencem ao espaço de
+    // trabalho, não a um projeto — dentro do projeto valem só os membros.
+    if (projectId) return fromStore;
     const fromPartners: Row[] = partners.map((p) => ({
       id: p.id,
       name: p.name,
@@ -130,7 +139,7 @@ export function TeamPageView() {
       roleLabel: p.roleLabel,
     }));
     return [...fromPartners, ...fromStore];
-  }, [members, dashboards, partners]);
+  }, [members, dashboards, partners, projectId]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -164,20 +173,20 @@ export function TeamPageView() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/30 pb-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-on-surface">
-            Equipe &amp; Parceiros
-          </h1>
-          <p className="mt-1 text-sm text-on-surface-variant">
-            Pessoas e times colaboradores do ecossistema Combogó Unicap.
-          </p>
+          <h1 className="text-base font-bold text-on-surface">Equipe &amp; Parceiros</h1>
+          {projectId && (
+            <p className="mt-1 text-xs text-on-surface-variant">
+              Membros com acesso ao projeto “{project?.name ?? projectId}”.
+            </p>
+          )}
         </div>
         {canManage && (
           <button
             type="button"
             onClick={() => setInviting(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-on-brand transition hover:bg-brand-strong active:scale-[0.98]"
+            className="inline-flex items-center gap-2 rounded-sm bg-brand px-4 py-2.5 text-sm font-medium text-on-brand transition hover:bg-brand-strong active:scale-[0.98] focus-ring-brand"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -196,7 +205,8 @@ export function TeamPageView() {
         </p>
       )}
 
-      {/* Equipes multidisciplinares */}
+      {/* Equipes multidisciplinares — nível espaço de trabalho */}
+      {!projectId && (
       <section className="mb-8">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
           Equipes Multidisciplinares ({TEAMS.length})
@@ -211,19 +221,19 @@ export function TeamPageView() {
               }
               aria-pressed={teamFilter === t.name}
               className={
-                "flex flex-col rounded-xl border bg-surface-container-lowest p-4 text-left transition hover:shadow-lg hover:shadow-brand/5 " +
+                "flex flex-col rounded-lg border bg-surface-container-lowest p-4 text-left shadow-sm transition hover:shadow-lg " +
                 (teamFilter === t.name
                   ? "border-brand/60 ring-1 ring-brand/40"
                   : "border-outline-variant/40 hover:border-brand/40")
               }
             >
               <div className="mb-3 flex items-start justify-between gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand-glow ring-1 ring-brand/20">
+                <span className="flex h-9 w-9 items-center justify-center rounded-sm bg-brand/10 text-brand-glow ring-1 ring-brand/25">
                   <TeamIcon name={t.icon} />
                 </span>
                 <span className="text-sm text-on-surface-variant">{t.memberCount} membros</span>
               </div>
-              <h3 className="font-display text-base font-semibold text-on-surface">{t.name}</h3>
+              <h3 className="text-base font-bold text-on-surface">{t.name}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-on-surface-variant">
                 {t.description}
               </p>
@@ -263,6 +273,7 @@ export function TeamPageView() {
           </p>
         )}
       </section>
+      )}
 
       {/* Membros & Parceiros */}
       <section>
@@ -302,14 +313,14 @@ export function TeamPageView() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-outline-variant/30 bg-surface-container-lowest">
+          <div className="overflow-x-auto rounded-lg border border-outline-variant/30 bg-surface-container-lowest shadow-sm">
             <table className="w-full min-w-[640px] text-left">
               <thead>
                 <tr className="border-b border-outline-variant/40 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-                  <th className="px-4 py-3 font-semibold">Colaborador</th>
-                  <th className="px-4 py-3 font-semibold">Equipe</th>
-                  <th className="px-4 py-3 font-semibold">Papel</th>
-                  <th className="px-4 py-3 text-right font-semibold">Ação</th>
+                  <th className="px-4 py-3 font-medium">Colaborador</th>
+                  <th className="px-4 py-3 font-medium">Equipe</th>
+                  <th className="px-4 py-3 font-medium">Papel</th>
+                  <th className="px-4 py-3 text-right font-medium">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/30">
@@ -412,6 +423,7 @@ export function TeamPageView() {
       {inviting && (
         <InviteMemberModal
           dashboards={dashboards}
+          defaultDashboardId={projectId}
           onClose={() => setInviting(false)}
           onInvite={(input) => {
             const member = addMember(input);
@@ -491,17 +503,22 @@ function TeamIcon({ name }: { name: TeamDef["icon"] }) {
 
 function InviteMemberModal({
   dashboards,
+  defaultDashboardId,
   onClose,
   onInvite,
 }: {
   dashboards: ReturnType<typeof useLab>["dashboards"];
+  /** Projeto da rota: o convite nasce dentro dele. */
+  defaultDashboardId?: string;
   onClose: () => void;
   onInvite: ReturnType<typeof useLab>["addMember"];
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MemberRole>("viewer");
-  const [dashboardId, setDashboardId] = useState(dashboards[0]?.id ?? "");
+  const [dashboardId, setDashboardId] = useState(
+    defaultDashboardId ?? dashboards[0]?.id ?? ""
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {

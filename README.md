@@ -58,12 +58,22 @@ O gerenciamento de estado utiliza exclusivamente a Context API do React.
 
 Atualmente, os dados permanecem apenas em memória.
 
+Testes e Automação
+
+Suíte com Vitest + Testing Library (jsdom) em `src/tests/`, cobrindo stores, exportação, templates, navegação, autenticação e usabilidade.
+
+`bun run test` — roda a suíte uma vez.
+
+`bun run test:watch` — roda em modo observador.
+
+`bun run verify` — lint (Biome) + typecheck (tsc) + testes, o mesmo que o CI executa.
+
+A integração contínua roda em `.github/workflows/ci.yml` a cada push e pull request: instala dependências, verifica estilo, tipos e executa todos os testes automaticamente.
+
 Ainda Não Implementado
 
 Backend / Database
 
 Drag and Drop
-
-Testes automatizados
 
 UI Kit externo
