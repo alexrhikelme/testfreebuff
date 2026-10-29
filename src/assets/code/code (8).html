@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"on-primary":"#ffffff","outline-variant":"#c3c6d7","on-primary-fixed":"#00174b","on-secondary-fixed-variant":"#5a00c6","primary-fixed-dim":"#b4c5ff","surface-container-highest":"#dae2fd","background":"#faf8ff","error":"#ba1a1a","primary":"#004ac6","tertiary":"#006243","on-error":"#ffffff","inverse-on-surface":"#eef0ff","on-surface-variant":"#434655","on-tertiary":"#ffffff","inverse-primary":"#b4c5ff","on-surface":"#131b2e","surface-tint":"#0053db","surface-variant":"#dae2fd","inverse-surface":"#283044","on-primary-fixed-variant":"#003ea8","secondary-fixed-dim":"#d2bbff","primary-fixed":"#dbe1ff","on-secondary":"#ffffff","surface-container":"#eaedff","surface-container-low":"#f2f3ff","on-primary-container":"#eeefff","tertiary-container":"#007d57","surface-container-lowest":"#ffffff","secondary":"#712ae2","surface-container-high":"#e2e7ff","on-tertiary-container":"#bdffdc","surface-bright":"#faf8ff","tertiary-fixed-dim":"#68dba9","surface-dim":"#d2d9f4","secondary-container":"#8a4cfc","on-background":"#131b2e","on-error-container":"#93000a","on-tertiary-fixed-variant":"#005137","primary-container":"#2563eb","on-secondary-fixed":"#25005a","tertiary-fixed":"#85f8c4","error-container":"#ffdad6","secondary-fixed":"#eaddff","on-secondary-container":"#fffbff","outline":"#737686","on-tertiary-fixed":"#002114","surface":"#faf8ff"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"space-xs":"0.375rem","gutter-md":"1rem","space-xl":"1.5rem","space-2xs":"0.25rem","space-3xl":"3rem","gutter-sm":"0.75rem","space-lg":"1rem","space-sm":"0.5rem","space-2xl":"2rem","gutter-lg":"1.5rem","margin-page":"1.5rem","space-md":"0.75rem","space-3xs":"0.125rem"},"fontFamily":{"body-sm":["Geist"],"label-md":["Geist"],"display":["Geist"],"label-sm":["Geist"],"headline-lg":["Geist"],"headline-md":["Geist"],"code-sm":["JetBrains Mono"],"body-lg":["Geist"],"headline-lg-mobile":["Geist"],"headline-sm":["Geist"],"body-md":["Geist"],"display-mobile":["Geist"]},"fontSize":{"body-sm":["13px",{"lineHeight":"18px","letterSpacing":"0em","fontWeight":"400"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"500"}],"display":["48px",{"lineHeight":"56px","letterSpacing":"-0.03em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.02em","fontWeight":"500"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"600"}],"headline-md":["22px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"600"}],"code-sm":["12px",{"lineHeight":"16px","letterSpacing":"-0.01em","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","letterSpacing":"-0.005em","fontWeight":"400"}],"headline-lg-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"600"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","letterSpacing":"0em","fontWeight":"400"}],"display-mobile":["36px",{"lineHeight":"44px","letterSpacing":"-0.025em","fontWeight":"600"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased selection:bg-primary-fixed selection:text-on-primary-fixed"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none"><div class="flex flex-col flex-1 overflow-y-auto"><div class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer rounded-lg m-space-xs"><div class="flex items-center gap-space-sm min-w-0"><div class="w-7 h-7 rounded-lg bg-surface-container-high flex items-center justify-center text-primary font-headline-sm text-headline-sm shrink-0"><span class="material-symbols-outlined text-[18px]">layers</span></div><div class="flex flex-col min-w-0 leading-tight"><span class="font-label-md text-label-md text-on-surface truncate">Acme Tech</span><span class="font-label-sm text-label-sm text-on-surface-variant truncate">SprintNote Pro</span></div></div><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><div class="px-space-md py-space-xs"><div class="flex items-center justify-between px-space-sm py-space-xs rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px]">search</span><span class="font-label-sm text-label-sm">Buscar...</span></div><kbd class="font-code-sm text-code-sm bg-surface-container-lowest px-space-2xs py-0.5 rounded text-on-surface-variant shadow-sm">⌘K</kbd></div></div><nav class="flex flex-col gap-0.5 px-space-sm pt-space-sm" data-active-classes="bg-surface-container-high text-on-surface font-label-md font-semibold rounded-lg"><span class="px-space-sm py-space-2xs font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Principal</span><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all" data-path="dashboards-boards" href="#"><span class="material-symbols-outlined text-[18px]">view_kanban</span><span class="font-body-sm text-body-sm flex-1 truncate">Dashboards & Boards</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all" data-path="minhas-anotacoes" href="#"><span class="material-symbols-outlined text-[18px]">description</span><span class="font-body-sm text-body-sm flex-1 truncate">Minhas Anotações</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all" data-path="equipe-parceiros" href="#"><span class="material-symbols-outlined text-[18px]">group</span><span class="font-body-sm text-body-sm flex-1 truncate">Equipe & Parceiros</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all" data-path="templates" href="#"><span class="material-symbols-outlined text-[18px]">auto_awesome_motion</span><span class="font-body-sm text-body-sm flex-1 truncate">Templates</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all" data-path="lixeira" href="#"><span class="material-symbols-outlined text-[18px]">delete</span><span class="font-body-sm text-body-sm flex-1 truncate">Lixeira</span></a></nav><div class="px-space-sm pt-space-lg flex flex-col gap-0.5"><div class="flex items-center justify-between px-space-sm py-space-2xs"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Projetos Ativos</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant hover:text-on-surface cursor-pointer">add</span></div><nav class="flex flex-col gap-0.5" data-active-classes="bg-surface-container-high text-on-surface font-label-md font-semibold rounded-lg"><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all" data-path="q3-product-launch" href="#"><span class="text-[14px] leading-none">🚀</span><span class="font-body-sm text-body-sm flex-1 truncate">Q3 Product Launch</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all" data-path="sprint-42-core-features" href="#"><span class="text-[14px] leading-none">⚡</span><span class="font-body-sm text-body-sm flex-1 truncate">Sprint 42 - Core Features</span></a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all" data-path="design-system-20" href="#"><span class="text-[14px] leading-none">🎨</span><span class="font-body-sm text-body-sm flex-1 truncate">Design System 2.0</span></a></nav></div></div><div class="p-space-sm border-t border-surface-container-high/40 flex items-center justify-between"><div class="flex items-center gap-space-sm"><span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span><span class="font-label-sm text-label-sm text-on-surface-variant">v4.8.2 Online</span></div><span class="material-symbols-outlined text-[18px] text-on-surface-variant hover:text-on-surface cursor-pointer">help_outline</span></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] z-40 flex items-center justify-between px-space-xl"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><img alt="SprintNote Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WjiEXjd084wGqq-Zq3paVTgiFEs6mywR0E48GlPQ821jIhEiXYk1823-UAAN8QJ8BVwUgRyAOJDHgAYHzmZ8zyF_NiIgzB1hzr9px2pauxR6w5vismK9K-AeVHH5MqRkjO3M-5ug5xRyFqBB2wVLuCQUXUCMbj_xIFiXzASpoHm3V0okxsgVk0TSfJ7KTcblQ6R_7EvttOVFZqqMsyMEsUlP9rKAdAOEINwMTNFF7rfUMZD0hYKXmsa_c"/><div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant"><span class="hover:text-on-surface cursor-pointer">Sprint 42</span><span class="material-symbols-outlined text-[14px]">chevron_right</span><span class="text-on-surface font-semibold">Board de Anotações</span></div></div><div class="hidden xl:flex items-center bg-surface-container-low p-0.5 rounded-lg"><button class="flex items-center gap-1.5 px-space-sm py-1 rounded bg-surface-container-lowest shadow-sm text-on-surface font-label-sm text-label-sm"><span class="material-symbols-outlined text-[15px]">view_kanban</span>Kanban Board</button><button class="flex items-center gap-1.5 px-space-sm py-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors font-label-sm text-label-sm"><span class="material-symbols-outlined text-[15px]">list_alt</span>Lista Notion</button><button class="flex items-center gap-1.5 px-space-sm py-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors font-label-sm text-label-sm"><span class="material-symbols-outlined text-[15px]">grid_view</span>Galeria</button></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center"><div class="flex -space-x-2 overflow-hidden items-center mr-space-sm"><div class="w-6 h-6 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-label-sm text-[10px] ring-2 ring-surface-container-lowest font-bold">AM</div><div class="w-6 h-6 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-[10px] ring-2 ring-surface-container-lowest font-bold">LC</div><div class="w-6 h-6 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-label-sm text-[10px] ring-2 ring-surface-container-lowest font-bold">RS</div></div><button class="flex items-center gap-1 text-primary hover:bg-surface-container-low px-space-sm py-1 rounded-lg font-label-sm text-label-sm transition-colors"><span class="material-symbols-outlined text-[15px]">person_add</span>+ Convidar</button></div><div class="hidden sm:flex items-center gap-space-xs px-space-sm py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container cursor-pointer transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span class="font-label-sm text-label-sm">Buscar</span><kbd class="font-code-sm text-code-sm bg-surface-container-lowest px-1 rounded shadow-xs text-on-surface-variant">Ctrl+K</kbd></div><button class="p-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button><div class="flex items-center pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBZkm12XqlNDHjlw5yKYyXj9jpTjesR43u3oIcsE6Wssa9u5aQeCxS4JzN8nTxV4_grvRkKbBnLAnuifp35vW0UJVr3LZh9eBOmZnhv83cFHkPJpxW1SS-YTlaZLA9BauOinFF2RdNvHehhZO7bJJOg6N3zVt0cQNBKuiazp7iA8Nxy_3dAjEH5A7Bpvi0m9Z2yM-KgojA62KVSy5-qDrRIg9xf6A3Rn-WUosJogItQtBYFmrwR2552A"/></div></div></header><main class="w-full pt-16 px-space-xl bg-surface min-h-screen"><div class="flex flex-col w-full pb-space-2xl">
+<!-- Top Level Scrum/Notion Header & Metrics Section -->
+<div class="flex flex-col gap-space-md pt-space-md mb-space-lg">
+<!-- Breadcrumb & Sprint Identity Banner -->
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-primary font-headline-lg shrink-0 shadow-sm cursor-pointer hover:bg-surface-container transition-colors group" title="Alterar ícone do Sprint">
+<span class="text-2xl group-hover:scale-110 transition-transform select-none">⚡</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs flex-wrap">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight truncate">Sprint 42 - Core Features</h1>
+<span class="px-space-xs py-0.5 rounded bg-surface-container text-on-surface-variant font-code-sm text-code-sm uppercase tracking-wider">v4.8.2-rc</span>
+<span class="px-space-xs py-0.5 rounded bg-tertiary/10 text-tertiary font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+              Em Execução
+            </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-space-3xs max-w-3xl">
+            Planejamento colaborativo para refatoração de infraestrutura de auth, novos webhooks assíncronos e componentes do Design System 2.0.
+          </p>
+</div>
+</div>
+<!-- Quick Metrics Summary Pills -->
+<div class="flex items-center gap-space-sm flex-wrap shrink-0">
+<div class="flex items-center gap-space-xs px-space-md py-space-xs bg-surface-container-low rounded-lg">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant"><strong class="text-on-surface font-semibold">14</strong> Anotações ativas</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-md py-space-xs bg-surface-container-low rounded-lg">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant"><strong class="text-on-surface font-semibold">5</strong> Concluídas</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-md py-space-xs bg-surface-container-low rounded-lg">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant"><strong class="text-on-surface font-semibold">2</strong> Bloqueadas</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-md py-space-xs bg-surface-container-high rounded-lg font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary">event_available</span>
+<span>Prazo Sprint: <strong>28 Outubro</strong></span>
+</div>
+</div>
+</div>
+<!-- Views Tabs & Functional Control Toolbar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md bg-surface-container-lowest px-space-lg py-space-sm rounded-xl shadow-sm">
+<!-- Tabs Selector -->
+<div class="flex items-center gap-1 overflow-x-auto">
+<button class="flex items-center gap-space-xs px-space-md py-space-xs rounded-lg bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[16px]">view_kanban</span>
+<span>Quadro Kanban</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-space-xs rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[16px]">list_alt</span>
+<span>Lista Notion</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-space-xs rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[16px]">table_chart</span>
+<span>Tabela</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-space-xs rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[16px]">timeline</span>
+<span>Linha do Tempo</span>
+</button>
+</div>
+<!-- Quick Action Controls & Filters -->
+<div class="flex items-center gap-space-xs flex-wrap">
+<!-- Search Input -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2.5 text-on-surface-variant text-[16px]">search</span>
+<input class="pl-8 pr-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface placeholder:text-on-surface-variant text-body-sm font-body-sm focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary w-48 sm:w-60 transition-all" placeholder="Filtrar por título ou tag..." type="text"/>
+</div>
+<!-- Members Filter Dropdown -->
+<div class="relative">
+<button class="flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span>Membros</span>
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+</button>
+</div>
+<!-- Tag Filter Selector -->
+<div class="relative hidden sm:block">
+<button class="flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">label</span>
+<span>Tags (5)</span>
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+</button>
+</div>
+<!-- Sort Control -->
+<button class="flex items-center gap-1 px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-label-md text-label-md" title="Ordenar por prazo">
+<span class="material-symbols-outlined text-[16px]">swap_vert</span>
+<span class="hidden md:inline">Prazo</span>
+</button>
+<!-- Primary CTA: + Nova Anotação -->
+<button class="flex items-center gap-1.5 px-space-md py-1.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container active:scale-[0.98] transition-all font-label-md text-label-md font-semibold shadow-sm ml-1" onclick="toggleNotionDrawer(true)">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Nova Anotação</span>
+<kbd class="ml-1 px-1 py-0.2 rounded bg-on-primary/20 text-on-primary font-code-sm text-[10px]">N</kbd>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Board Area & Side Drawer Container -->
+<div class="relative flex items-start gap-space-lg overflow-x-auto pb-6">
+<!-- 4 KANBAN SCRUM COLUMNS -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-lg w-full min-w-[1040px] flex-1">
+<!-- COLUNA 1: NÃO INICIADA -->
+<div class="flex flex-col bg-surface-container-low p-space-sm rounded-xl">
+<!-- Header da Coluna -->
+<div class="flex items-center justify-between px-space-sm py-space-xs mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-outline"></span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Não Iniciada</h2>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-semibold">4</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Adicionar nota">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Cards List -->
+<div class="flex flex-col gap-space-sm min-h-[580px]">
+<!-- Card 1.1 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-on-surface-variant">#SPR-201</span>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-0.5 text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+<button class="p-0.5 text-on-surface-variant hover:text-error"><span class="material-symbols-outlined text-[14px]">delete</span></button>
+</div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs group-hover:text-primary transition-colors">Mapeamento dos Webhooks Assíncronos</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mb-space-sm">Definir schemas JSON e política de retentativa exponencial para webhooks de terceiros.</p>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">API Backend</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Arquitetura</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs border-t border-surface-container-high/30">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>20 Out - 25 Out</span>
+</div>
+<div class="flex -space-x-1.5 overflow-hidden">
+<div class="w-6 h-6 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest" title="Rodrigo Silva">RS</div>
+</div>
+</div>
+</div>
+<!-- Card 1.2 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-on-surface-variant">#SPR-204</span>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-0.5 text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+<button class="p-0.5 text-on-surface-variant hover:text-error"><span class="material-symbols-outlined text-[14px]">delete</span></button>
+</div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs group-hover:text-primary transition-colors">Pesquisa de Usabilidade: Fluxo de Checkout</h3>
+<!-- Mini Checklist Indicator -->
+<div class="flex items-center gap-2 mb-space-sm">
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-outline h-1.5 rounded-full" style="width: 20%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant shrink-0">1/5</span>
+</div>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-secondary-fixed/50 text-on-secondary-fixed font-label-sm text-label-sm">Pesquisa</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">UX</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>24 Out - 28 Out</span>
+</div>
+<div class="flex -space-x-1.5 overflow-hidden">
+<div class="w-6 h-6 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest" title="Lucas Prado">LP</div>
+</div>
+</div>
+</div>
+<!-- Card 1.3 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-on-surface-variant">#SPR-209</span>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-0.5 text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+</div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs group-hover:text-primary transition-colors">Auditoria de Dependências NPM & Segurança</h3>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Infra</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>26 Out - 27 Out</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest">CE</div>
+</div>
+</div>
+<!-- Quick Add Button Placeholder Inside Column -->
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/50 text-on-surface-variant hover:text-primary hover:bg-surface-container-lowest hover:border-primary/40 font-label-sm text-label-sm transition-all">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Adicionar nota</span>
+</button>
+</div>
+</div>
+<!-- COLUNA 2: EM ANDAMENTO -->
+<div class="flex flex-col bg-surface-container-low p-space-sm rounded-xl">
+<!-- Header da Coluna -->
+<div class="flex items-center justify-between px-space-sm py-space-xs mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Em Andamento</h2>
+<span class="px-1.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-semibold">5</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Cards List -->
+<div class="flex flex-col gap-space-sm min-h-[580px]">
+<!-- Card 2.1 (ACTIVE / CURRENTLY OPEN IN DRAWER) -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-md ring-2 ring-primary/60 transition-all cursor-pointer relative hover:-translate-y-0.5" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="font-code-sm text-code-sm text-primary font-semibold">#SPR-188</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+</div>
+<div class="flex items-center gap-1">
+<span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-[10px] font-bold">ABERTO</span>
+</div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs group-hover:text-primary transition-colors">Refatoração da API de Autenticação e Gestão de Sessões</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mb-space-sm">Substituição de sessões Stateful em Redis por JWT com verificação local e Refresh Tokens em cookies HttpOnly.</p>
+<!-- Progress Bar -->
+<div class="flex items-center gap-2 mb-space-sm">
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full" style="width: 60%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold shrink-0">3/5</span>
+</div>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-semibold">Backend</span>
+<span class="px-2 py-0.5 rounded bg-error/10 text-error font-label-sm text-label-sm font-semibold">Segurança</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Sprint 42</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs border-t border-surface-container-high/30">
+<div class="flex items-center gap-1 text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">alarm</span>
+<span>14 Out - 24 Out</span>
+</div>
+<div class="flex -space-x-1.5 overflow-hidden">
+<div class="w-6 h-6 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest" title="Mariana Costa">MC</div>
+<div class="w-6 h-6 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest" title="Carlos Eduardo">CE</div>
+</div>
+</div>
+</div>
+<!-- Card 2.2 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-on-surface-variant">#SPR-192</span>
+<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-0.5 text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+</div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs group-hover:text-primary transition-colors">Componente Tabela Dinâmica com Virtual Scroll</h3>
+<div class="flex items-center gap-2 mb-space-sm">
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full" style="width: 75%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant shrink-0">6/8</span>
+</div>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-primary-fixed/60 text-on-primary-fixed font-label-sm text-label-sm">Frontend</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Design UX</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs border-t border-surface-container-high/30">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>Hoje - 22 Out</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest" title="Ana Silva">AS</div>
+</div>
+</div>
+<!-- Card 2.3 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-on-surface-variant">#SPR-195</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs group-hover:text-primary transition-colors">Sincronização Bidirecional com Google Calendar</h3>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Integrações</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>15 Out - 23 Out</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest">LP</div>
+</div>
+</div>
+</div>
+</div>
+<!-- COLUNA 3: BLOQUEADA -->
+<div class="flex flex-col bg-surface-container-low p-space-sm rounded-xl">
+<!-- Header da Coluna -->
+<div class="flex items-center justify-between px-space-sm py-space-xs mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Bloqueada</h2>
+<span class="px-1.5 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">2</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Cards List -->
+<div class="flex flex-col gap-space-sm min-h-[580px]">
+<!-- Card 3.1 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-error text-[16px]">block</span>
+<span class="font-code-sm text-code-sm text-error font-semibold">#SPR-173</span>
+</div>
+<span class="px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-[10px] font-bold">IMPEDIMENTO</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs group-hover:text-primary transition-colors">Pipeline de Deploy Contínuo no AWS EKS</h3>
+<div class="p-2 rounded bg-error-container/30 mb-space-sm">
+<p class="font-body-sm text-[11px] leading-tight text-on-surface">
+<strong>Bloqueio:</strong> Aguardando credenciais IAM de produção do time de DevOps.
+              </p>
+</div>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-error-container/50 text-on-error-container font-label-sm text-label-sm">DevOps</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Urgente</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs border-t border-surface-container-high/30">
+<div class="flex items-center gap-1 text-error font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span>Atrasado (18 Out)</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest">RS</div>
+</div>
+</div>
+<!-- Card 3.2 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-error font-semibold">#SPR-181</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-space-xs group-hover:text-primary transition-colors">Validação Fiscal com API Externa SEFAZ</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mb-space-sm">Instabilidade no sandbox da receita inviabilizando testes e2e.</p>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Compliance</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>10 Out - 20 Out</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest">MC</div>
+</div>
+</div>
+</div>
+</div>
+<!-- COLUNA 4: CONCLUÍDA -->
+<div class="flex flex-col bg-surface-container-low p-space-sm rounded-xl">
+<!-- Header da Coluna -->
+<div class="flex items-center justify-between px-space-sm py-space-xs mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Concluída</h2>
+<span class="px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">3</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Cards List -->
+<div class="flex flex-col gap-space-sm min-h-[580px]">
+<!-- Card 4.1 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5 opacity-90 hover:opacity-100" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-tertiary font-semibold">#SPR-165</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">check_circle</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface line-through decoration-on-surface-variant/40 mb-space-xs">Criação do Pacote de Ícones Lucide + Material Symbols</h3>
+<div class="flex items-center gap-2 mb-space-sm">
+<div class="w-full bg-tertiary/20 rounded-full h-1.5 overflow-hidden">
+<div class="bg-tertiary h-1.5 rounded-full" style="width: 100%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary font-bold shrink-0">5/5</span>
+</div>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-tertiary/10 text-tertiary font-label-sm text-label-sm">Design System</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs border-t border-surface-container-high/30">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+<span>Finalizado 15 Out</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest">AS</div>
+</div>
+</div>
+<!-- Card 4.2 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5 opacity-90 hover:opacity-100" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-tertiary font-semibold">#SPR-170</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">check_circle</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface line-through decoration-on-surface-variant/40 mb-space-xs">Otimização de Índices no Postgres para Consultas de Notas</h3>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Database</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+<span>Finalizado 16 Out</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest">CE</div>
+</div>
+</div>
+<!-- Card 4.3 -->
+<div class="group bg-surface-container-lowest p-space-md rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative hover:-translate-y-0.5 opacity-90 hover:opacity-100" onclick="toggleNotionDrawer(true)">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<span class="font-code-sm text-code-sm text-tertiary font-semibold">#SPR-177</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">check_circle</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface line-through decoration-on-surface-variant/40 mb-space-xs">Setup do Linter ESLint e Formatter Biome</h3>
+<div class="flex flex-wrap gap-1 mb-space-md">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Frontend</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">check</span>
+<span>Finalizado 17 Out</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold ring-2 ring-surface-container-lowest">LP</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- NOTION-STYLE SIDE DRAWER / PAGE PEEK (OPEN & INTERACTIVE) -->
+<div class="w-full md:w-[620px] lg:w-[680px] bg-surface-container-lowest shadow-2xl rounded-2xl flex flex-col shrink-0 z-30 transition-all duration-300 relative border-l-4 border-primary" id="notion-drawer">
+<!-- Drawer Header Bar -->
+<div class="flex items-center justify-between px-space-lg py-space-md border-b border-surface-container-high/40 bg-surface-container-lowest sticky top-0 z-10 rounded-t-2xl">
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-1 px-space-sm py-1 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm transition-colors" title="Expandir em tela cheia">
+<span class="material-symbols-outlined text-[16px]">open_in_full</span>
+<span class="hidden sm:inline">Expandir</span>
+</button>
+<button class="flex items-center gap-1 px-space-sm py-1 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm transition-colors">
+<span class="material-symbols-outlined text-[16px]">share</span>
+<span class="hidden sm:inline">Compartilhar</span>
+</button>
+<button class="p-1 rounded-lg hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface transition-colors" title="Histórico de versões">
+<span class="material-symbols-outlined text-[18px]">history</span>
+</button>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-1 px-space-sm py-1 rounded-lg bg-primary text-on-primary hover:bg-primary-container font-label-sm text-label-sm font-semibold transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[15px]">check</span>
+<span>Salvar</span>
+</button>
+<button class="p-1 rounded-lg text-error hover:bg-error-container/30 transition-colors" title="Excluir anotação">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<div class="w-px h-4 bg-surface-container-high"></div>
+<button class="p-1 rounded-lg hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface transition-colors" onclick="toggleNotionDrawer(false)" title="Fechar painel (Esc)">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+</div>
+<!-- Drawer Content Scrollable Area -->
+<div class="p-space-xl flex flex-col gap-space-lg overflow-y-auto max-h-[calc(100vh-140px)]">
+<!-- Editable Large Page Title -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm mb-1">
+<span class="text-base select-none">🔒</span>
+<span>Anotação de Engenharia • Sprint 42</span>
+</div>
+<input class="font-headline-lg text-headline-lg text-on-surface bg-transparent focus:outline-none focus:bg-surface-container-low/50 px-1 py-1 rounded-lg font-semibold tracking-tight w-full transition-colors" type="text" value="Refatoração da API de Autenticação e Gestão de Sessões"/>
+</div>
+<!-- Notion-Style Metadata Properties Table -->
+<div class="bg-surface-container-low/40 rounded-xl p-space-md flex flex-col gap-space-xs">
+<!-- Property: Status -->
+<div class="grid grid-cols-12 items-center py-1 px-2 rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="col-span-4 flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">hourglass_empty</span>
+<span>Status</span>
+</div>
+<div class="col-span-8 flex items-center">
+<div class="flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-primary/10 text-primary font-label-sm text-label-sm font-semibold cursor-pointer hover:bg-primary/20 transition-colors">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>Em Andamento</span>
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Property: Assignees / Partners -->
+<div class="grid grid-cols-12 items-center py-1 px-2 rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="col-span-4 flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span>Responsáveis</span>
+</div>
+<div class="col-span-8 flex items-center gap-2 flex-wrap">
+<div class="flex items-center gap-1.5 bg-surface-container-lowest px-2 py-1 rounded-lg shadow-2xs">
+<div class="w-5 h-5 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-label-sm text-[9px] font-bold">MC</div>
+<span class="font-label-sm text-label-sm text-on-surface">Mariana Costa</span>
+<button class="text-on-surface-variant hover:text-error text-[12px]">×</button>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-lowest px-2 py-1 rounded-lg shadow-2xs">
+<div class="w-5 h-5 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-[9px] font-bold">CE</div>
+<span class="font-label-sm text-label-sm text-on-surface">Carlos Eduardo</span>
+<button class="text-on-surface-variant hover:text-error text-[12px]">×</button>
+</div>
+<button class="flex items-center gap-1 text-primary hover:text-primary-container px-2 py-1 rounded-lg font-label-sm text-label-sm transition-colors hover:bg-surface-container">
+<span class="material-symbols-outlined text-[14px]">person_add</span>
+<span>+ Atribuir</span>
+</button>
+</div>
+</div>
+<!-- Property: Dates / Deadlines -->
+<div class="grid grid-cols-12 items-center py-1 px-2 rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="col-span-4 flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">date_range</span>
+<span>Prazos</span>
+</div>
+<div class="col-span-8 flex items-center gap-2 flex-wrap">
+<div class="flex items-center gap-1 bg-surface-container-lowest px-2 py-1 rounded-lg text-on-surface font-code-sm text-code-sm shadow-2xs">
+<span>14/10/2024</span>
+<span class="text-on-surface-variant">→</span>
+<span>24/10/2024</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-[11px] font-bold">Faltam 4 dias</span>
+</div>
+</div>
+<!-- Property: Tags -->
+<div class="grid grid-cols-12 items-center py-1 px-2 rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="col-span-4 flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">local_offer</span>
+<span>Tags</span>
+</div>
+<div class="col-span-8 flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-primary-fixed/50 text-on-primary-fixed font-label-sm text-label-sm">Backend</span>
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm">Segurança</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm">Sprint 42</span>
+<button class="text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex items-center px-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[14px]">add</span>
+<span>Tag</span>
+</button>
+</div>
+</div>
+<!-- Property: Linked Dashboard -->
+<div class="grid grid-cols-12 items-center py-1 px-2 rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="col-span-4 flex items-center gap-2 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">dashboard_customize</span>
+<span>Dashboard</span>
+</div>
+<div class="col-span-8 flex items-center gap-1.5 font-label-sm text-label-sm text-primary font-semibold cursor-pointer hover:underline">
+<span>⚡ Sprint 42 - Core Features</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</div>
+</div>
+</div>
+<div class="h-px bg-surface-container-high/50 my-1"></div>
+<!-- Rich Text Editor Section (Notion Style Document Body) -->
+<div class="flex flex-col gap-space-md">
+<!-- Notion Callout Box -->
+<div class="flex items-start gap-space-md p-space-md rounded-xl bg-surface-container-low border-l-4 border-primary">
+<div class="text-xl shrink-0 select-none">💡</div>
+<div class="flex flex-col text-on-surface font-body-sm text-body-sm">
+<strong class="font-semibold text-primary">Atenção Crítica de Segurança:</strong>
+<span>Os novos tokens JWT utilizam chaves assimétricas EdDSA (Ed25519) com rotação automática a cada 24 horas. Certifique-se de invalidar o refresh token nas rotas de logout global.</span>
+</div>
+</div>
+<!-- Section: Context & Checklist -->
+<div class="flex flex-col gap-space-xs">
+<h4 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">checklist</span>
+              Subtarefas de Implementação
+            </h4>
+<div class="flex flex-col gap-2 mt-2">
+<!-- Checklist Item 1 (Done) -->
+<label class="flex items-center gap-space-sm p-space-xs rounded-lg hover:bg-surface-container-low cursor-pointer group">
+<input checked="" class="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface-variant line-through group-hover:text-on-surface">Configurar expiração de Access Token para 15 minutos em cookies httpOnly</span>
+</label>
+<!-- Checklist Item 2 (Done) -->
+<label class="flex items-center gap-space-sm p-space-xs rounded-lg hover:bg-surface-container-low cursor-pointer group">
+<input checked="" class="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface-variant line-through group-hover:text-on-surface">Criar middleware de verificação rápida com cache em memória</span>
+</label>
+<!-- Checklist Item 3 (Done) -->
+<label class="flex items-center gap-space-sm p-space-xs rounded-lg hover:bg-surface-container-low cursor-pointer group">
+<input checked="" class="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface-variant line-through group-hover:text-on-surface">Validar revogação de tokens de dispositivo ao resetar senha</span>
+</label>
+<!-- Checklist Item 4 (Pending) -->
+<label class="flex items-center gap-space-sm p-space-xs rounded-lg hover:bg-surface-container-low cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface font-medium group-hover:text-primary">Implementar testes de carga e concorrência no endpoint /auth/refresh</span>
+</label>
+<!-- Checklist Item 5 (Pending) -->
+<label class="flex items-center gap-space-sm p-space-xs rounded-lg hover:bg-surface-container-low cursor-pointer group">
+<input class="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface font-medium group-hover:text-primary">Atualizar Swagger OpenAPI com schemas de erro HTTP 401 e 403</span>
+</label>
+</div>
+</div>
+<!-- Section: Code Block (Syntax Highlight Aesthetic) -->
+<div class="flex flex-col gap-space-xs mt-space-sm">
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm px-1">
+<span>TypeScript • middleware/authenticate.ts</span>
+<button class="hover:text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">content_copy</span>Copiar</button>
+</div>
+<div class="bg-inverse-surface p-space-md rounded-xl text-inverse-on-surface font-code-sm text-code-sm overflow-x-auto shadow-inner leading-relaxed">
+<span class="text-tertiary-fixed font-semibold">export async function</span> <span class="text-primary-fixed">verifySessionToken</span>(req: Request) {<br/>
+                <span class="text-outline-variant">// Extrai o payload criptografado com validação zero-latency</span><br/>
+                <span class="text-tertiary-fixed font-semibold">const</span> token = req.cookies.get(<span class="text-secondary-fixed-dim">'__session_id'</span>)?.value;<br/>
+                <span class="text-tertiary-fixed font-semibold">if</span> (!token) <span class="text-tertiary-fixed font-semibold">throw new</span> UnauthorizedException(<span class="text-secondary-fixed-dim">'Sessão expirada'</span>);<br/>
+                <span class="text-tertiary-fixed font-semibold">return await</span> jwtEngine.verify(token, { algorithm: <span class="text-secondary-fixed-dim">'Ed25519'</span> });<br/>
+              }
+            </div>
+</div>
+<!-- Section: Comments & Collaboration Stream -->
+<div class="flex flex-col gap-space-md pt-space-md mt-space-sm border-t border-surface-container-high/40">
+<h4 class="font-headline-sm text-headline-sm text-on-surface flex items-center justify-between">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">chat</span>
+                Discussão da Equipe (2)
+              </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-normal">Sincronizado via WebSocket</span>
+</h4>
+<!-- Comment 1 -->
+<div class="flex items-start gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold shrink-0">LP</div>
+<div class="flex flex-col bg-surface-container-low p-space-sm rounded-xl flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Lucas Prado</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hoje às 10:42</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">
+                  @Mariana, já verifiquei no frontend e os interceptors do Axios já estão preparados para disparar o refresh silencioso no HTTP 401. Podem avançar com o deploy em staging!
+                </p>
+</div>
+</div>
+<!-- Comment Input Box -->
+<div class="flex items-start gap-space-sm mt-1">
+<div class="w-7 h-7 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-label-sm text-[10px] font-bold shrink-0">MC</div>
+<div class="flex flex-col gap-2 flex-1">
+<div class="relative">
+<textarea class="w-full p-space-sm rounded-xl bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary focus:bg-surface-container-lowest resize-none transition-all" placeholder="Escreva um comentário ou mencione um colega com @..." rows="2"></textarea>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button class="p-1 rounded hover:bg-surface-container-low"><span class="material-symbols-outlined text-[16px]">alternate_email</span></button>
+<button class="p-1 rounded hover:bg-surface-container-low"><span class="material-symbols-outlined text-[16px]">attach_file</span></button>
+<button class="p-1 rounded hover:bg-surface-container-low"><span class="material-symbols-outlined text-[16px]">mood</span></button>
+</div>
+<button class="px-space-md py-1 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container transition-colors">
+                    Enviar
+                  </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Drawer Script & Shortcut Handling -->
+<script>
+    function toggleNotionDrawer(open) {
+      const drawer = document.getElementById('notion-drawer');
+      if (!drawer) return;
+      if (open) {
+        drawer.classList.remove('hidden');
+        drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'end' });
+      } else {
+        drawer.classList.add('hidden');
+      }
+    }
+
+    // Keyboard Shortcuts (N para nova nota, Esc para fechar drawer)
+    window.addEventListener('keydown', (e) => {
+      if ((e.key === 'n' || e.key === 'N') && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        toggleNotionDrawer(true);
+      }
+      if (e.key === 'Escape') {
+        toggleNotionDrawer(false);
+      }
+    });
+  </script>
+</div></main></div></body></html>

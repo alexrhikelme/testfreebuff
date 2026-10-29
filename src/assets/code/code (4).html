@@ -1,0 +1,247 @@
+<!DOCTYPE html><html class="h-full" lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Combogó UNICAP - Login Institucional</title>
+<!-- Tailwind CSS v3 com plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: '#B69656',
+              goldLight: '#CFB075',
+              goldDark: '#937435',
+              navy: '#0C1B33',
+              navyLight: '#182C4D',
+              wine: '#871822',
+              cream: '#FAF8F5'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            serif: ['Cinzel', 'Georgia', 'serif']
+          },
+          boxShadow: {
+            'glow': '0 10px 25px -5px rgba(182, 150, 86, 0.25), 0 8px 10px -6px rgba(182, 150, 86, 0.2)',
+            'card': '0 20px 50px rgba(0, 0, 0, 0.35)'
+          }
+        }
+      }
+    }
+  </script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style data-purpose="base-effects">
+    /* Gradiente suave e refinamento visual para o background e efeitos glassmorphism */
+    .bg-unicap-overlay {
+      background: linear-gradient(135deg, rgba(12, 27, 51, 0.88) 0%, rgba(15, 32, 67, 0.78) 50%, rgba(26, 42, 68, 0.88) 100%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+  </style>
+</head>
+<body class="h-full font-sans antialiased text-slate-800 bg-brand-navy flex flex-col justify-between selection:bg-brand-gold selection:text-white">
+<!-- BEGIN: BackgroundContainer -->
+<!-- Imagem panorâmica aérea do campus UNICAP com overlay cinematográfico -->
+<div aria-hidden="true" class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+<img alt="Campus da Universidade Católica de Pernambuco" class="w-full h-full object-cover object-center transform scale-105 filter brightness-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwhMN_GTpJxG62ZTy8-6q3Bs5vEHmg-nI-5oT8Rr6Kqmonhh7IxljHVu708H1STMHxb9gaT3eVW-Arg4Ty-CveuYtxJXXzf9ee4wTivy7eamOlkw_VIwcTeMfe1CWFoT0MleaQJvGLfP2pum4k5BBjLDPVS4-NHEmoeSHwLsc8Dy-rpjYV3coyCQzNQc8gs_RUWSzkPKJokcJ1M77damMt_jHbVtX0ob3xqJi_7yr8QvzUXJIIHMaWyW6LQBHhmuxZdYo">
+<div class="absolute inset-0 bg-unicap-overlay"></div>
+<div class="absolute inset-0 bg-radial from-transparent via-black/20 to-black/60"></div>
+</div>
+<!-- END: BackgroundContainer -->
+<!-- BEGIN: TopBar -->
+<!-- Barra superior elegante com badge institucional -->
+<header class="w-full px-6 py-4 flex items-center justify-between text-white/90 z-10">
+<div class="flex items-center space-x-3">
+<div class="w-2.5 h-2.5 rounded-full bg-brand-gold animate-pulse"></div>
+<span class="text-xs uppercase tracking-widest font-semibold text-brand-goldLight">Portal Acadêmico Oficial</span>
+</div>
+<div class="hidden sm:flex items-center space-x-5 text-xs text-slate-200">
+<span class="flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity">
+<svg class="w-4 h-4 text-brand-gold" fill="currentColor" viewBox="0 0 20 20">
+<path clip-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" fill-rule="evenodd"></path>
+</svg>
+        Ambiente Seguro TLS 1.3
+      </span>
+<span class="text-white/30">|</span>
+<a class="hover:text-brand-gold transition-colors" href="#ajuda">Ajuda</a>
+</div>
+</header>
+<!-- END: TopBar -->
+<!-- BEGIN: MainContent -->
+<main class="flex-grow flex items-center justify-center p-4 sm:p-6 md:p-8 z-10 my-auto">
+<div class="w-full max-w-[480px]">
+<!-- Card Central de Login -->
+<div class="glass-card rounded-2xl shadow-card border border-white/60 p-6 sm:p-9 relative overflow-hidden">
+<!-- Detalhe decorativo sutil dourado no topo do card -->
+<div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-gold via-brand-goldLight to-brand-goldDark"></div>
+<!-- BEGIN: InstitutionalHeader -->
+<div class="text-center mb-7">
+<!-- Logo Oficial da UNICAP -->
+<div class="flex justify-center mb-4">
+<img alt="Universidade Católica de Pernambuco - Logo Oficial" class="h-14 sm:h-16 w-auto object-contain transition-transform hover:scale-105 duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVL8Gx-63Dhv0N6FIS356EiJ2ejfAL5ZQZ5up0fGqvtc-ZwEwCfodpxXx6hEnkjZdFzDMLj41z2Iu6goEI5rxifqxBI0Ypt2MT8UFVWG2kIYVkBZnG5j6Ice1TngWpRsOuKH5gV3RdeS4En-e1ZD-o6QSRc2XgrWWT1BEMePTap_qsx4nlEvwP5e7dR7L5GbMxKslmnHepErJoRvTBLdzGOq5hB4BP-zYaFwOu7-6Qs4P8GIjrP5kPAyKl9UWDc7NgJCs">
+</div>
+<div class="mt-2">
+<h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-brand-navy flex items-center justify-center gap-2">
+<span class="">Combogó</span>
+<span class="text-xs px-2 py-0.5 rounded-full bg-brand-gold/15 text-brand-goldDark font-semibold uppercase tracking-wider border border-brand-gold/30">Unicap</span>
+</h1>
+<p class="text-xs sm:text-sm text-slate-500 mt-1 font-normal max-w-xs mx-auto">
+              Ambiente de Gestão, Projetos e Anotações Colaborativas
+            </p>
+</div>
+</div>
+<!-- END: InstitutionalHeader -->
+<!-- BEGIN: MicrosoftSSO -->
+<!-- Acesso rápido via Microsoft 365 / Outlook Institucional -->
+<div class="mb-5">
+<button class="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-medium text-sm rounded-xl shadow-sm transition-all duration-200 flex items-center justify-center gap-3 group focus:outline-none focus:ring-2 focus:ring-brand-gold focus:ring-offset-2" type="button">
+<!-- Ícone Microsoft Institucional -->
+<svg class="w-4 h-4 transition-transform group-hover:scale-110 flex-shrink-0" viewBox="0 0 21 21">
+<path d="M1 1h9v9H1z" fill="#f25022"></path>
+<path d="M1 11h9v9H1z" fill="#00a4ef"></path>
+<path d="M11 1h9v9H11z" fill="#7fba00"></path>
+<path d="M11 11h9v9H11z" fill="#ffb900"></path>
+</svg>
+<span class="">Entrar com <strong>e-mail institucional</strong></span>
+</button>
+</div>
+<!-- END: MicrosoftSSO -->
+<!-- BEGIN: Divider -->
+
+<!-- END: Divider -->
+<!-- BEGIN: LoginForm -->
+<form class="space-y-4" onsubmit="event.preventDefault();">
+<!-- Campo Identificador / E-mail -->
+<div>
+<label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5" for="identifier">
+              E-mail Institucional ou RA
+            </label>
+<div class="relative rounded-xl shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+<!-- Ícone Acadêmico / Usuário -->
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<input class="block w-full pl-10 pr-3.5 py-2.5 sm:text-sm bg-slate-50/70 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-gold focus:border-brand-gold transition-colors" id="identifier" name="identifier" placeholder="aluno@unicap.br ou 00000000" required="" type="text">
+</div>
+</div>
+<!-- Campo Senha -->
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider" for="password">
+                Senha de Acesso
+              </label>
+<a class="text-xs font-medium text-brand-goldDark hover:text-brand-navy transition-colors" href="#recuperar-senha">
+                Esqueceu a senha?
+              </a>
+</div>
+<div class="relative rounded-xl shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+<!-- Ícone de Cadeado -->
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<input class="block w-full pl-10 pr-10 py-2.5 sm:text-sm bg-slate-50/70 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-gold focus:border-brand-gold transition-colors" id="password" name="password" placeholder="••••••••••••" required="" type="password">
+<!-- Botão alternar visualização de senha -->
+<button aria-label="Alternar visualização da senha" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none" id="togglePassword" type="button">
+<svg class="h-4 w-4" fill="none" id="eyeIcon" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Botão Submeter Principal -->
+<div class="pt-2">
+<button class="w-full py-2.5 px-4 bg-gradient-to-r from-brand-navy to-brand-navyLight hover:from-brand-navyLight hover:to-brand-navy text-white font-medium text-sm rounded-xl shadow-md hover:shadow-lg transition duration-200 flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-brand-navy focus:ring-offset-2" type="submit">
+<span class="">Entrar no Combogó</span>
+<svg class="w-4 h-4 text-brand-gold transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</form>
+<!-- END: LoginForm -->
+<!-- BEGIN: AlternativeMethods -->
+<!-- Opção para outros modos de login como Gov.br ou Certificado -->
+<div class="mt-6 pt-4 border-t border-slate-100 text-center">
+<button class="text-xs font-semibold text-slate-500 hover:text-brand-navy transition-colors inline-flex items-center gap-1.5 focus:outline-none focus:underline" type="button">
+<svg class="w-3.5 h-3.5 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M8 9l4-4 4 4m0 6l-4 4-4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="">Tentar de outro jeito (Gov.br, Token ou Visitante)</span>
+</button>
+</div>
+<!-- END: AlternativeMethods -->
+</div>
+<!-- BEGIN: CardSubNote -->
+<div class="mt-4 text-center">
+<p class="text-[11px] text-white/75 flex items-center justify-center gap-1.5">
+<svg class="w-3.5 h-3.5 text-brand-goldLight flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+<path clip-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" fill-rule="evenodd"></path>
+</svg>
+          Acesso seguro integrado aos serviços acadêmicos da UNICAP
+        </p>
+</div>
+<!-- END: CardSubNote -->
+</div>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: InstitutionalFooter -->
+<!-- Links de apoio e conformidade -->
+<footer class="w-full py-4 px-6 text-center text-xs text-slate-300/80 z-10">
+<div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+<div>
+<span class="">© Universidade Católica de Pernambuco. Todos os direitos reservados.</span>
+</div>
+<div class="flex items-center space-x-4">
+<a class="hover:text-brand-goldLight transition-colors" href="#ajuda">Central de Ajuda</a>
+<span class="text-white/20">•</span>
+<a class="hover:text-brand-goldLight transition-colors" href="#privacidade">Política de Privacidade</a>
+<span class="text-white/20">•</span>
+<a class="hover:text-brand-goldLight transition-colors" href="#suporte-ti">Suporte de TI Unicap</a>
+</div>
+</div>
+</footer>
+<!-- END: InstitutionalFooter -->
+<!-- BEGIN: LogicScript -->
+<!-- Interatividade básica para visibilidade de senha -->
+<script data-purpose="toggle-password-visibility">
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggleBtn = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('password');
+      const eyeIcon = document.getElementById('eyeIcon');
+
+      if (toggleBtn && passwordInput) {
+        toggleBtn.addEventListener('click', function () {
+          const isPassword = passwordInput.getAttribute('type') === 'password';
+          passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+          
+          // Alternar ícone
+          if (isPassword) {
+            eyeIcon.innerHTML = `
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+            `;
+          } else {
+            eyeIcon.innerHTML = `
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            `;
+          }
+        });
+      }
+    });
+  </script>
+<!-- END: LogicScript -->
+
+
+</body></html>

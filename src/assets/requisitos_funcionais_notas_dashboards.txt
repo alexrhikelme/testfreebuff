@@ -1,0 +1,20 @@
+# Requisitos Funcionais - Plataforma de Notas e Dashboards Colaborativos
+
+## Gestão de Anotações (Pessoal e Compartilhada)
+- Criar, visualizar, editar e excluir anotações.
+- Modificar status da anotação (ex: Não iniciada, Em andamento, Concluída, Bloqueada).
+- Adicionar tags/etiquetas para categorização.
+- Definir data de início e data de término (prazos).
+- Atribuir anotações a parceiros/membros do time.
+
+## Gestão de Projetos e Dashboards
+- Criar, visualizar e excluir dashboards.
+- Suporte a múltiplos dashboards (usuário proprietário ou colaborador participante).
+- Adicionar e remover membros/parceiros da equipe com níveis de permissão.
+- Adicionar anotações ao dashboard e remover anotações.
+
+## Organização e Colaboração no Dashboard
+- Múltiplas visualizações de layout (Quadro Kanban por status, Grade de Cards, Lista/Tabela detalhada).
+- Drag-and-drop para mover anotações e reordenar no dashboard.
+- Permissão colaborativa: editar anotações de parceiros, alterar status e reatribuir.
+- Indicadores visuais de status, prazos e membros atribuídos em tempo real.
