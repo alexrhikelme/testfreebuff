@@ -1,4 +1,7 @@
-name: CI
+# CI — lint, typecheck e testes
+
+ Esta verificação roda em cada push e pull request para garantir
+ qualidade de código, consistência de tipos e cobertura de testes.
 
 on:
   push:
@@ -12,8 +15,8 @@ concurrency:
 jobs:
   verify:
     name: Lint, typecheck e testes
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu:24.04
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -22,7 +25,7 @@ jobs:
       - name: Instalar Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.2.2"
 
       - name: Instalar dependências
         run: bun install --frozen-lockfile
@@ -33,5 +36,29 @@ jobs:
       - name: Typecheck (tsc)
         run: bunx tsc -b --noEmit
 
-      - name: Testes (Vitest)
+      - name: Testes unitários (Vitest)
         run: bun run test
+
+      - name: Cobertura e relatório
+        if: always()
+        run: |
+          bun run test -- --coverage
+          mkdir -p coverage
+          cp -r .vitest/coverage coverage/ || true
+
+      - name: Upload do relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          retention-days: 7
+
+      - name: Resumo do GitHub
+        if: always()
+        run: |
+          echo "### Execução concluída" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Workflow: `${{ github.workflow }}`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: `${{ github.ref_name }}`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- SHA: `${{ github.sha }}`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Status: `${{ job.status }}`" >> "$GITHUB_STEP_SUMMARY"

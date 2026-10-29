@@ -10,7 +10,9 @@
     "lint": "biome check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "biome check . && tsc -b --noEmit && vitest run"
+    "verify": "biome check . && tsc -b --noEmit && vitest run",
+    "verify:report": "bun run verify:report:sh",
+    "verify:report:sh": "echo 'verify:report:sh ainda não foi implementado'"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.95",
