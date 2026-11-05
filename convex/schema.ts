@@ -69,4 +69,65 @@ export default defineSchema({
     actor: v.string(),
     at: v.string(),
   }),
+
+  /**
+   * Perfis de produto ligados à conta autenticada (auth `users`).
+   * O `users` do auth guarda e-mail/nome; aqui ficam papel, bio e avatar.
+   */
+  profiles: defineTable({
+    id: v.string(),
+    name: v.string(),
+    email: v.string(),
+    role: v.union(
+      v.literal("admin"),
+      v.literal("editor"),
+      v.literal("viewer")
+    ),
+    avatarUrl: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index("by_ref", ["id"])
+    .index("by_email", ["email"]),
+
+  /** Projetos/laboratórios do sistema. */
+  projects: defineTable({
+    id: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    status: v.union(
+      v.literal("active"),
+      v.literal("planning"),
+      v.literal("paused"),
+      v.literal("finished")
+    ),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+    createdBy: v.string(),
+  }).index("by_ref", ["id"]),
+
+  /** Vínculo usuário ↔ projeto com papel (permissões). */
+  projectMembers: defineTable({
+    id: v.string(),
+    projectId: v.string(),
+    userId: v.string(),
+    role: v.union(
+      v.literal("owner"),
+      v.literal("admin"),
+      v.literal("editor"),
+      v.literal("viewer")
+    ),
+    joinedAt: v.string(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_user", ["userId"]),
+
+  /** Estado da sincronização com o Firestore. */
+  firebaseSyncState: defineTable({
+    enabled: v.boolean(),
+    lastSyncAt: v.optional(v.string()),
+    lastError: v.optional(v.string()),
+    lastSyncCount: v.optional(v.number()),
+  }).index("by_ref", ["enabled"]),
 });
