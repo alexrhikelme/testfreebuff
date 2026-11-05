@@ -6,6 +6,10 @@
 # Dependências e saída de build
 node_modules/
 dist/
+coverage/
+test-results/
+playwright-report/
+blob-report/
 *.tsbuildinfo
 
 # Artefatos avulsos (mantidos no disco, fora do versionamento)

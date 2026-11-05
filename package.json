@@ -10,6 +10,9 @@
     "lint": "biome check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report",
     "verify": "biome check . && tsc -b --noEmit && vitest run",
     "verify:report": "bun run verify:report:sh",
     "verify:report:sh": "echo 'verify:report:sh ainda não foi implementado'"
@@ -17,11 +20,13 @@
   "dependencies": {
     "@convex-dev/auth": "^0.0.95",
     "convex": "^1.46.0",
+    "firebase": "^13.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
@@ -31,6 +36,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "@vitest/coverage-v8": "5.0.1",
     "autoprefixer": "^10.4.21",
     "biome": "0.2.x",
     "jsdom": "^30.1.0",
