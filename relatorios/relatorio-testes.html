@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Relatório de Testes Automatizados — Combogó Unicap</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 16mm 15mm 18mm;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "DejaVu Sans", sans-serif;
+        color: #1f2933;
+        font-size: 10.2pt;
+        line-height: 1.5;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      h1, h2, h3 { margin: 0; letter-spacing: -0.015em; }
+      p { margin: 0; }
+
+      /* ---------- capa / cabeçalho ---------- */
+      .hero {
+        border-radius: 14px;
+        padding: 22px 24px 20px;
+        background: linear-gradient(135deg, #0d3b33 0%, #124f42 55%, #0a5c4a 100%);
+        color: #f2fbf7;
+      }
+      .eyebrow {
+        font-size: 8.6pt;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: #9fe0c8;
+        font-weight: 600;
+      }
+      .hero h1 {
+        font-size: 25pt;
+        margin-top: 8px;
+        line-height: 1.15;
+      }
+      .hero .sub {
+        margin-top: 8px;
+        font-size: 10.4pt;
+        color: #cdeee1;
+      }
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .meta dt {
+        font-size: 7.6pt;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #9fe0c8;
+      }
+      .meta dd {
+        margin: 2px 0 0;
+        font-size: 9.6pt;
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      /* ---------- integrantes ---------- */
+      .integrantes {
+        margin-top: 16px;
+        border: 1px solid #dde5e2;
+        border-radius: 12px;
+        padding: 14px 18px 16px;
+        background: #f7faf9;
+      }
+      .integrantes h2 {
+        font-size: 9.4pt;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #0d3b33;
+      }
+      .nomes {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px 14px;
+        margin-top: 10px;
+        font-size: 10pt;
+      }
+      .nomes span::before {
+        content: "•";
+        color: #0a8f6f;
+        font-weight: 700;
+        margin-right: 6px;
+      }
+
+      /* ---------- KPIs ---------- */
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .kpi {
+        border: 1px solid #dde5e2;
+        border-top: 3px solid #0a8f6f;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: #ffffff;
+      }
+      .kpi b {
+        display: block;
+        font-size: 19pt;
+        line-height: 1.1;
+        color: #0d3b33;
+      }
+      .kpi span {
+        font-size: 8.2pt;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #5b6b6a;
+      }
+
+      /* ---------- seções ---------- */
+      section { margin-top: 20px; }
+      h2.sec {
+        font-size: 12.4pt;
+        color: #0d3b33;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #0a8f6f;
+      }
+      h2.sec small {
+        font-size: 8.6pt;
+        font-weight: 500;
+        color: #6b7c7a;
+        letter-spacing: 0;
+        margin-left: 6px;
+      }
+
+      figure { margin: 12px 0 0; }
+      figure img {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid #d5d5d5;
+        display: block;
+      }
+      figcaption {
+        margin-top: 6px;
+        font-size: 8.4pt;
+        color: #6b7c7a;
+        font-style: italic;
+      }
+
+      table.data {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 9.2pt;
+      }
+      table.data thead th {
+        text-align: left;
+        background: #0d3b33;
+        color: #eafaf3;
+        font-weight: 600;
+        padding: 7px 10px;
+        font-size: 8.6pt;
+      }
+      table.data tbody td {
+        padding: 6px 10px;
+        border-bottom: 1px solid #e3eae8;
+        vertical-align: top;
+      }
+      table.data tbody tr:nth-child(even) td { background: #f7faf9; }
+      table.data tbody tr:last-child td { border-bottom: 0; }
+      table.data td.num, table.data th.num { text-align: right; width: 58px; }
+      table.data td.mono, table.data code {
+        font-family: "DejaVu Sans Mono", ui-monospace, monospace;
+        font-size: 8.4pt;
+        color: #0b4f3f;
+      }
+      .ok {
+        display: inline-block;
+        background: #e6f7ee;
+        color: #0a6b41;
+        border: 1px solid #bfe6cf;
+        border-radius: 999px;
+        padding: 1px 8px;
+        font-size: 8pt;
+        font-weight: 600;
+      }
+      .dois-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .nota {
+        margin-top: 10px;
+        border-left: 3px solid #d9a300;
+        background: #fffaeb;
+        border-radius: 0 8px 8px 0;
+        padding: 10px 14px;
+        font-size: 9.2pt;
+      }
+      pre.cmd {
+        margin: 10px 0 0;
+        background: #12211d;
+        color: #d6f5e9;
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-family: "DejaVu Sans Mono", ui-monospace, monospace;
+        font-size: 8.6pt;
+        line-height: 1.75;
+        white-space: pre-wrap;
+      }
+      footer.rodape {
+        margin-top: 18px;
+        padding-top: 8px;
+        border-top: 1px solid #dde5e2;
+        font-size: 7.8pt;
+        color: #7a8987;
+        display: flex;
+        justify-content: space-between;
+      }
+      .quebra { break-before: page; page-break-before: always; }
+      .evita { break-inside: avoid; page-break-inside: avoid; }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">Combogó Unicap · Gestão de Laboratório</p>
+      <h1>Relatório de Testes Automatizados</h1>
+      <p class="sub">
+        Resultado da pipeline local de verificação contínua — lint, typecheck,
+        testes unitários, cobertura e testes de ponta a ponta.
+      </p>
+      <dl class="meta">
+        <div><dt>Data</dt><dd>05/11/2026</dd></div>
+        <div><dt>Repositório</dt><dd>alexrhikelme/testfreebuff</dd></div>
+        <div><dt>Branch / commit</dt><dd>main · 3ff0aed</dd></div>
+        <div><dt>Status</dt><dd>6/6 etapas aprovadas</dd></div>
+      </dl>
+    </header>
+
+    <div class="integrantes evita">
+      <h2>Integrantes do grupo</h2>
+      <div class="nomes">
+        <span>Alex Rhikleme</span>
+        <span>Gabriel Vera Cruz</span>
+        <span>Igor Gabriel</span>
+        <span>Kelvson Nilson</span>
+        <span>Lucas Mourato</span>
+      </div>
+    </div>
+
+    <div class="kpis evita">
+      <div class="kpi"><b>203</b><span>testes aprovados</span></div>
+      <div class="kpi"><b>25</b><span>arquivos de teste</span></div>
+      <div class="kpi"><b>0</b><span>falhas / skips</span></div>
+      <div class="kpi"><b>70,9%</b><span>cobertura de linhas</span></div>
+    </div>
+
+    <section>
+      <h2 class="sec">Evidência da execução<small>saída da pipeline local</small></h2>
+      <figure class="evita">
+        <img src="evidencia-pipeline.png" alt="Painel da pipeline local com 6 de 6 etapas aprovadas" />
+        <figcaption>
+          Evidência 1 — painel “Pipeline local — 6/6 etapas aprovadas”, com as seis
+          etapas do <code>ci.yml</code> e os resultados obtidos no commit <code>3ff0aed</code>.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="evita">
+      <h2 class="sec">Etapas executadas<small>na mesma ordem do workflow de CI</small></h2>
+      <table class="data">
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>Etapa</th>
+            <th>Comando</th>
+            <th>Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">1</td>
+            <td>Instalar dependências</td>
+            <td class="mono">bun install --frozen-lockfile</td>
+            <td><span class="ok">453 pacotes · lock inalterado</span></td>
+          </tr>
+          <tr>
+            <td class="num">2</td>
+            <td>Lint</td>
+            <td class="mono">bun run lint</td>
+            <td><span class="ok">Biome limpo</span></td>
+          </tr>
+          <tr>
+            <td class="num">3</td>
+            <td>Typecheck</td>
+            <td class="mono">bunx tsc -b --noEmit</td>
+            <td><span class="ok">sem erros</span></td>
+          </tr>
+          <tr>
+            <td class="num">4</td>
+            <td>Testes unitários</td>
+            <td class="mono">bun run test</td>
+            <td><span class="ok">177 testes / 18 arquivos</span></td>
+          </tr>
+          <tr>
+            <td class="num">5</td>
+            <td>Cobertura</td>
+            <td class="mono">bun run test:coverage</td>
+            <td><span class="ok">177 testes · 70,9% de linhas</span></td>
+          </tr>
+          <tr>
+            <td class="num">6</td>
+            <td>Testes e2e</td>
+            <td class="mono">bun run test:e2e</td>
+            <td><span class="ok">26 testes em Chromium</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="nota">
+        O comando <code>bun install --frozen-lockfile</code> é a primeira etapa do
+        workflow e garante que o <code>bun.lock</code> versionado está consistente
+        com o <code>package.json</code> — é o mesmo teste que o CI executa.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="sec">Testes unitários e de componente<small>Vitest 5 · 18 arquivos</small></h2>
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Arquivo</th>
+            <th>Escopo coberto</th>
+            <th class="num">Testes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">navigation.test.tsx</td><td>Sidebar por projeto, Projetos ativos e as 6 seções</td><td class="num">4</td></tr>
+          <tr><td class="mono">windows.test.tsx</td><td>Lixeira, Templates, Minhas Anotações, Equipe e atalhos</td><td class="num">17</td></tr>
+          <tr><td class="mono">authFlow.test.tsx</td><td>Landing, rota protegida, returnTo e validações</td><td class="num">7</td></tr>
+          <tr><td class="mono">sprints.test.tsx</td><td>Criação, renomeação e exclusão de sprints no Kanban</td><td class="num">4</td></tr>
+          <tr><td class="mono">penteFino.test.tsx</td><td>Janelinha de notificações e eventos recentes</td><td class="num">6</td></tr>
+          <tr><td class="mono">richText.test.tsx</td><td>Editor de texto rico</td><td class="num">5</td></tr>
+          <tr><td class="mono">usability.test.tsx</td><td>Atalhos, foco e acessibilidade básica</td><td class="num">4</td></tr>
+          <tr><td class="mono">components.test.tsx</td><td>Componentes compartilhados (Logo, Toast, ConfirmDialog)</td><td class="num">6</td></tr>
+          <tr><td class="mono">importDoc.test.tsx</td><td>Importação de documentos por arraste/seletor</td><td class="num">9</td></tr>
+          <tr><td class="mono">export.test.ts</td><td>Exportação de notas e relatórios</td><td class="num">17</td></tr>
+          <tr><td class="mono">dashboardsStore.test.tsx</td><td>Store de dashboards e projetos</td><td class="num">11</td></tr>
+          <tr><td class="mono">trashStore.test.tsx</td><td>Lixeira: exclusão, restauração e limpeza</td><td class="num">12</td></tr>
+          <tr><td class="mono">notesStore.test.tsx</td><td>Store de notas e vínculo com sprints</td><td class="num">8</td></tr>
+          <tr><td class="mono">deadline.test.ts</td><td>Prazos: atrasos, hoje e próximos dias</td><td class="num">20</td></tr>
+          <tr><td class="mono">format.test.ts</td><td>Formatação de datas e textos</td><td class="num">17</td></tr>
+          <tr><td class="mono">helpers.test.ts</td><td>Tempo relativo, status e ordenação do Kanban</td><td class="num">14</td></tr>
+          <tr><td class="mono">templates.test.ts</td><td>Catálogo de modelos</td><td class="num">6</td></tr>
+          <tr><td class="mono">backendConfig.test.ts</td><td>Seleção do modo de backend (Convex × local)</td><td class="num">10</td></tr>
+        </tbody>
+      </table>
+
+      <h2 class="sec" style="margin-top: 18px">Testes de ponta a ponta<small>Playwright 1.64 · Chromium 156 · 7 arquivos</small></h2>
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Arquivo</th>
+            <th>Fluxos verificados no navegador</th>
+            <th class="num">Testes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">landing.spec.ts</td><td>Proposta do produto, CTAs e “Ver demonstração” → /auth</td><td class="num">3</td></tr>
+          <tr><td class="mono">acesso.spec.ts</td><td>Rota protegida, returnTo após login e 4 validações do formulário</td><td class="num">4</td></tr>
+          <tr><td class="mono">navegacao.spec.ts</td><td>Visão geral em /app, sidebar por projeto, Projetos ativos e as 6 seções</td><td class="num">4</td></tr>
+          <tr><td class="mono">sprints.spec.ts</td><td>4 colunas base, criar/renomear, exclusão com confirmação e persistência após reload</td><td class="num">3</td></tr>
+          <tr><td class="mono">lixeira.spec.ts</td><td>Contagens, filtros, busca e restauração com toast</td><td class="num">4</td></tr>
+          <tr><td class="mono">templates.spec.ts</td><td>Catálogo de 6 modelos, filtro por categoria, busca e “Usar modelo”</td><td class="num">4</td></tr>
+          <tr><td class="mono">equipe.spec.ts</td><td>4 equipes, tabela de membros, busca, filtro e escopo de projeto</td><td class="num">4</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="evita">
+      <h2 class="sec">Cobertura de código<small>@vitest/coverage-v8</small></h2>
+      <table class="data">
+        <thead>
+          <tr><th>Métrica</th><th class="num">Cobertura</th><th>Situação</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Linhas</td><td class="num">70,9%</td><td><span class="ok">aprovado</span></td></tr>
+          <tr><td>Statements</td><td class="num">71,5%</td><td><span class="ok">aprovado</span></td></tr>
+          <tr><td>Funções</td><td class="num">61,3%</td><td><span class="ok">aprovado</span></td></tr>
+          <tr><td>Branches</td><td class="num">57,5%</td><td><span class="ok">aprovado</span></td></tr>
+        </tbody>
+      </table>
+      <p class="nota">
+        As funções novas de backend (<code>convex/projects.ts</code>,
+        <code>convex/profiles.ts</code>, <code>convex/firestore.ts</code>) são
+        validadas pelo typecheck, mas ainda não têm testes de comportamento:
+        exercitá-las exige <code>convex-test</code> e a geração de tipos, que não
+        roda neste ambiente.
+      </p>
+    </section>
+
+    <section class="evita">
+      <h2 class="sec">Ambiente de execução<small>versões verificadas</small></h2>
+      <table class="data">
+        <tbody>
+          <tr><td>Runtime / gerenciador de pacotes</td><td class="mono">Bun 1.3.14</td></tr>
+          <tr><td>Node.js</td><td class="mono">v22.23.1</td></tr>
+          <tr><td>Testes unitários</td><td class="mono">Vitest 5.0.1 + jsdom 30 + Testing Library</td></tr>
+          <tr><td>Testes de ponta a ponta</td><td class="mono">Playwright 1.64.1 + Chromium 156 (headless)</td></tr>
+          <tr><td>Qualidade de código</td><td class="mono">Biome + TypeScript (tsc -b --noEmit)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="evita">
+      <h2 class="sec">Como reproduzir</h2>
+      <pre class="cmd">bun install --frozen-lockfile   # 1. dependências
+bun run lint                    # 2. Biome
+bunx tsc -b --noEmit            # 3. typecheck
+bun run test                    # 4. 177 testes unitários
+bun run test:coverage           # 5. cobertura
+bun run test:e2e                # 6. 26 testes e2e (Chromium)</pre>
+      <p class="nota">
+        <strong>Observação sobre o CI no GitHub:</strong> a execução remota
+        (run <code>42027159837</code>, commit <code>3ff0aed</code>) não chegou a
+        iniciar nenhum passo — o job foi recusado antes da atribuição de runner
+        com a anotação <em>“The job was not started because your account is
+        locked due to a billing issue”</em>. A aprovação registrada neste
+        relatório é a execução local dos seis mesmos comandos do
+        <code>.github/workflows/ci.yml</code>.
+      </p>
+    </section>
+
+    <footer class="rodape">
+      <span>Relatório de Testes Automatizados · Combogó Unicap</span>
+      <span>203 testes aprovados · 6/6 etapas · 05/11/2026</span>
+    </footer>
+  </body>
+</html>

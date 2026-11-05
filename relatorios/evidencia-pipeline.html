@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Evidência — pipeline local</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        width: 960px;
+        padding: 22px;
+        background: #1c1c1c;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "DejaVu Sans", sans-serif;
+        color: #e8e8e8;
+      }
+      .panel {
+        border: 1px solid #3a3a3a;
+        border-radius: 14px;
+        background: #232323;
+        overflow: hidden;
+      }
+      .panel__head {
+        padding: 16px 20px 14px;
+        border-bottom: 1px solid #333;
+      }
+      h2 { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+      table { width: 100%; border-collapse: collapse; font-size: 15px; }
+      thead th {
+        text-align: left;
+        font-weight: 500;
+        color: #a8a8a8;
+        padding: 12px 20px;
+        border-bottom: 1px solid #333;
+        font-size: 14px;
+      }
+      tbody td {
+        padding: 13px 20px;
+        border-bottom: 1px solid #2e2e2e;
+        vertical-align: top;
+      }
+      tbody tr:last-child td { border-bottom: 0; }
+      .num { color: #a8a8a8; width: 42px; }
+      .etapa { width: 210px; line-height: 1.35; }
+      code {
+        font-family: "DejaVu Sans Mono", ui-monospace, monospace;
+        font-size: 13px;
+        color: #9ecbff;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 5px;
+        padding: 2px 6px;
+        white-space: nowrap;
+      }
+      .ok { color: #dcdcdc; line-height: 1.4; }
+      .check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 17px;
+        height: 17px;
+        margin-right: 7px;
+        border-radius: 4px;
+        background: #22c55e;
+        color: #08210f;
+        font-size: 12px;
+        font-weight: 900;
+        vertical-align: -3px;
+      }
+      .resultado { width: 300px; }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <div class="panel__head">
+        <h2>Pipeline local — 6/6 etapas aprovadas</h2>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th class="etapa">Etapa (igual ao <code>ci.yml</code>)</th>
+            <th>Comando</th>
+            <th class="resultado">Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">1</td>
+            <td class="etapa">Instalar dependências</td>
+            <td><code>bun install --frozen-lockfile</code></td>
+            <td class="ok"><span class="check">✓</span>453 pacotes, <strong>sem mudanças no lock</strong></td>
+          </tr>
+          <tr>
+            <td class="num">2</td>
+            <td class="etapa">Lint</td>
+            <td><code>bun run lint</code></td>
+            <td class="ok"><span class="check">✓</span>Biome limpo</td>
+          </tr>
+          <tr>
+            <td class="num">3</td>
+            <td class="etapa">Typecheck</td>
+            <td><code>bunx tsc -b --noEmit</code></td>
+            <td class="ok"><span class="check">✓</span>sem erros</td>
+          </tr>
+          <tr>
+            <td class="num">4</td>
+            <td class="etapa">Testes unitários</td>
+            <td><code>bun run test</code></td>
+            <td class="ok"><span class="check">✓</span><strong>177 testes / 18 arquivos</strong></td>
+          </tr>
+          <tr>
+            <td class="num">5</td>
+            <td class="etapa">Cobertura</td>
+            <td><code>bun run test:coverage</code></td>
+            <td class="ok"><span class="check">✓</span>177 testes, 70,9% de linhas</td>
+          </tr>
+          <tr>
+            <td class="num">6</td>
+            <td class="etapa">e2e</td>
+            <td><code>bun run test:e2e</code></td>
+            <td class="ok"><span class="check">✓</span><strong>26 testes em Chromium</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>
