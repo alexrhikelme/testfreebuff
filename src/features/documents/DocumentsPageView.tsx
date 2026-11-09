@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SEED_DOCS, type WorkspaceDoc } from "./data";
 import { importFile } from "./import";
 import { useOptionalAuth } from "@/app/router/AppRouter";
+import { canEditDashboard } from "@/features/dashboards/store";
 import { useToast } from "@/shared/components/Toast";
 import { RichTextEditor, RichContentView } from "@/features/notes/RichText";
 import {
@@ -12,6 +13,56 @@ import {
   exportFilename,
 } from "./export";
 
+const DOCS_STORAGE_KEY = "labnotes-docs-v1";
+
+type DocsState = {
+  docs: WorkspaceDoc[];
+  checked: Record<string, boolean>;
+  selectedId: string;
+};
+
+/**
+ * Persistência da janela: documentos, checklists e seleção sobrevivem à troca
+ * de janela/rota e ao recarregamento. Sem storage, cai nos dados de exemplo.
+ */
+function loadDocsState(): DocsState {
+  const fallback: DocsState = {
+    docs: SEED_DOCS,
+    checked: {},
+    selectedId: SEED_DOCS[0].id,
+  };
+  try {
+    const raw = window.localStorage.getItem(DOCS_STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<DocsState>;
+    const docs = Array.isArray(parsed.docs) ? parsed.docs : SEED_DOCS;
+    if (docs.length === 0) return fallback;
+    const selectedId =
+      typeof parsed.selectedId === "string" &&
+      docs.some((d) => d.id === parsed.selectedId)
+        ? parsed.selectedId
+        : docs[0].id;
+    return {
+      docs,
+      checked:
+        parsed.checked && typeof parsed.checked === "object"
+          ? parsed.checked
+          : {},
+      selectedId,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function persistDocsState(state: DocsState): void {
+  try {
+    window.localStorage.setItem(DOCS_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage indisponível: a janela continua funcionando em memória.
+  }
+}
+
 /**
  * Sprint 13 — Minhas Anotações redesignado ao mockup:
  * toolbar com busca + "Nova Anotação", lista de documentos recentes e
@@ -20,11 +71,16 @@ import {
  */
 export function DocumentsPageView() {
   const { user } = useOptionalAuth();
+  /** P1 — `viewer` consulta documentos, mas não cria novos. */
+  const canEdit = canEditDashboard(user?.role ?? "admin");
   const { showToast } = useToast();
-  const [docs, setDocs] = useState<WorkspaceDoc[]>(SEED_DOCS);
-  const [selectedId, setSelectedId] = useState(SEED_DOCS[0].id);
+  const [initialState] = useState(loadDocsState);
+  const [docs, setDocs] = useState<WorkspaceDoc[]>(initialState.docs);
+  const [selectedId, setSelectedId] = useState(initialState.selectedId);
   const [query, setQuery] = useState("");
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [checked, setChecked] = useState<Record<string, boolean>>(
+    initialState.checked
+  );
   /** Pente fino (item 3): edição inline de seção com toolbar rica. */
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
@@ -40,6 +96,13 @@ export function DocumentsPageView() {
   }, [docs, query]);
 
   const selected = docs.find((d) => d.id === selectedId) ?? visible[0] ?? docs[0];
+
+  // Toda mudança (criar, importar, editar texto/título, checklist, seleção)
+  // é gravada na hora, então voltar para esta janela mantém o conteúdo.
+  useEffect(() => {
+    if (!selected) return;
+    persistDocsState({ docs, checked, selectedId: selected.id });
+  }, [docs, checked, selected]);
 
   const toggleCheck = (docId: string, index: number) => {
     setChecked((prev) => {
@@ -142,6 +205,46 @@ export function DocumentsPageView() {
   const cancelEditSection = () => {
     setEditingIndex(null);
     setDraft("");
+  };
+
+  /**
+   * Título editável na própria janela de leitura/escrita da anotação.
+   * Confirma com Enter ou ao sair do campo; ESC descarta o rascunho.
+   */
+  const [titleDraft, setTitleDraft] = useState(selected?.title ?? "");
+  const [editingTitle, setEditingTitle] = useState(false);
+  useEffect(() => {
+    setTitleDraft(selected?.title ?? "");
+    setEditingTitle(false);
+  }, [selected?.id, selected?.title]);
+
+  const commitTitle = () => {
+    if (!selected) return;
+    const value = titleDraft.trim();
+    if (!value) {
+      setTitleDraft(selected.title);
+      return;
+    }
+    if (value === selected.title) return;
+    const targetId = selected.id;
+    setDocs((prev) =>
+      prev.map((d) =>
+        d.id === targetId
+          ? {
+              ...d,
+              title: value,
+              editedLabel: `Editado agora às ${savedAtLabel}`,
+            }
+          : d
+      )
+    );
+    setEditingTitle(false);
+    showToast("success", "Título atualizado.");
+  };
+
+  const cancelTitle = () => {
+    setTitleDraft(selected?.title ?? "");
+    setEditingTitle(false);
   };
 
   /** Exporta o documento selecionado no formato escolhido. */
@@ -255,7 +358,9 @@ export function DocumentsPageView() {
           <button
             type="button"
             onClick={createDoc}
-            className="inline-flex items-center gap-2 rounded-sm bg-brand px-4 py-2.5 text-sm font-medium text-on-brand transition hover:bg-brand-strong active:scale-[0.98] focus-ring-brand"
+            disabled={!canEdit}
+            title={canEdit ? undefined : "Seu perfil é somente leitura."}
+            className="inline-flex items-center gap-2 rounded-sm bg-brand px-4 py-2.5 text-sm font-medium text-on-brand transition hover:bg-brand-strong active:scale-[0.98] focus-ring-brand disabled:cursor-not-allowed disabled:opacity-60"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -425,9 +530,64 @@ export function DocumentsPageView() {
               </div>
             </div>
 
-            <h2 className="mt-6 font-display text-lg font-bold leading-snug text-on-surface">
-              {selected.title}
-            </h2>
+            {editingTitle ? (
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={titleDraft}
+                  autoFocus
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onBlur={commitTitle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      commitTitle();
+                    }
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancelTitle();
+                    }
+                  }}
+                  aria-label="Título da anotação"
+                  className="min-w-0 flex-1 rounded-md border border-brand/50 bg-surface-container-lowest px-2.5 py-1.5 font-display text-lg font-bold text-on-surface focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                />
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={commitTitle}
+                  className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-on-brand transition hover:bg-brand-strong"
+                >
+                  Salvar título
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={cancelTitle}
+                  className="rounded-md px-2 py-1.5 text-xs font-medium text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 flex flex-wrap items-baseline gap-2">
+                <h2 className="font-display text-lg font-bold leading-snug text-on-surface">
+                  {selected.title}
+                </h2>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTitleDraft(selected.title);
+                      setEditingTitle(true);
+                    }}
+                    className="rounded px-1.5 py-0.5 text-xs font-medium text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
+                    title="Renomear anotação"
+                  >
+                    Renomear
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="mt-4 space-y-5">
               {selected.sections.map((s, i) => (

@@ -4,4 +4,6 @@ import { afterEach } from "vitest";
 
 afterEach(() => {
   cleanup();
+  // Estado persistido (documentos, sprints, contas) não vaza entre testes.
+  window.localStorage.clear();
 });
