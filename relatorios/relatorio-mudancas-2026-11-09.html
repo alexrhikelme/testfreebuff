@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Relatório de Mudanças — Lab Notes / Dashboards — 09/11/2026</title>
+    <style>
+      :root {
+        --ink: #16241f;
+        --muted: #5b6b66;
+        --green-900: #0d3b33;
+        --green-700: #0a5c4a;
+        --green-600: #0a8f6f;
+        --mint-100: #e8f5ef;
+        --line: #dbe7e2;
+        --amber: #b45309;
+        --red: #b42318;
+        --soft: #f5faf8;
+      }
+
+      @page {
+        size: A4;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "DejaVu Sans", sans-serif;
+        color: var(--ink);
+        font-size: 9.9pt;
+        line-height: 1.52;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      h1, h2, h3, h4 { margin: 0; letter-spacing: -0.015em; }
+      p { margin: 0; }
+      ul, ol { margin: 0; padding-left: 16px; }
+      li { margin: 3px 0; }
+      code {
+        font-family: "SFMono-Regular", ui-monospace, "DejaVu Sans Mono", monospace;
+        font-size: 8.4pt;
+        background: #eef4f1;
+        border: 1px solid #dbe7e2;
+        border-radius: 4px;
+        padding: 0.5px 4px;
+        color: #0d3b33;
+        white-space: nowrap;
+      }
+
+      /* ---------- capa ---------- */
+      .hero {
+        border-radius: 16px;
+        padding: 26px 28px 22px;
+        background:
+          radial-gradient(120% 140% at 100% 0%, rgba(10, 143, 111, 0.45) 0%, rgba(10, 143, 111, 0) 55%),
+          linear-gradient(135deg, #0b332c 0%, #0d4438 55%, #0a5c4a 100%);
+        color: #f2fbf7;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+        background-size: 26px 26px;
+        pointer-events: none;
+      }
+      .hero > * { position: relative; z-index: 1; }
+      .eyebrow {
+        font-size: 8.3pt;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: #9fe0c8;
+        font-weight: 700;
+      }
+      .hero h1 {
+        font-size: 25pt;
+        margin-top: 9px;
+        line-height: 1.12;
+      }
+      .hero .sub {
+        margin-top: 9px;
+        font-size: 10.3pt;
+        color: #cfeee2;
+        max-width: 150mm;
+      }
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 20px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .meta dt {
+        font-size: 7.2pt;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #9fe0c8;
+        font-weight: 600;
+      }
+      .meta dd {
+        margin: 3px 0 0;
+        font-size: 9.4pt;
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      /* ---------- KPIs ---------- */
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .kpi {
+        border: 1px solid var(--line);
+        border-top: 3px solid var(--green-600);
+        border-radius: 11px;
+        padding: 11px 13px;
+        background: #ffffff;
+      }
+      .kpi b {
+        display: block;
+        font-size: 17.5pt;
+        line-height: 1.05;
+        color: var(--green-900);
+        letter-spacing: -0.03em;
+      }
+      .kpi b small { font-size: 10pt; color: var(--muted); font-weight: 600; }
+      .kpi span {
+        display: block;
+        margin-top: 4px;
+        font-size: 7.5pt;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--muted);
+      }
+
+      /* ---------- seções ---------- */
+      section { margin-top: 18px; }
+      h2.sec {
+        font-size: 12.6pt;
+        color: var(--green-900);
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--green-600);
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      h2.sec, h3.sub { break-after: avoid; }
+      h2.sec .n {
+        font-size: 8.4pt;
+        font-weight: 700;
+        color: var(--green-600);
+        letter-spacing: 0.08em;
+      }
+      h2.sec small {
+        font-size: 8.2pt;
+        font-weight: 500;
+        color: var(--muted);
+        letter-spacing: 0;
+        margin-left: auto;
+      }
+      h3.sub {
+        margin-top: 14px;
+        font-size: 10.4pt;
+        color: var(--green-900);
+      }
+      .lead { margin-top: 8px; color: #2b3a35; }
+      .note {
+        margin-top: 10px;
+        border-left: 3px solid var(--green-600);
+        background: var(--soft);
+        padding: 8px 11px;
+        border-radius: 0 8px 8px 0;
+        font-size: 9.3pt;
+        color: #2f403a;
+      }
+      .warn {
+        margin-top: 10px;
+        border: 1px solid #f0d3a8;
+        background: #fff8ec;
+        border-radius: 9px;
+        padding: 9px 12px;
+        font-size: 9.2pt;
+        color: #6b4310;
+      }
+      .warn b { color: #8a4b0f; }
+
+      /* ---------- tabelas ---------- */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 9px;
+        font-size: 8.9pt;
+      }
+      thead th {
+        text-align: left;
+        font-size: 7.4pt;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #4c5f58;
+        background: #eff6f3;
+        border-bottom: 1px solid var(--line);
+        padding: 6px 7px;
+        font-weight: 700;
+      }
+      tbody td {
+        padding: 6px 7px;
+        border-bottom: 1px solid #e8efec;
+        vertical-align: top;
+      }
+      tbody tr:nth-child(even) td { background: #fbfdfc; }
+      td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+      td.tight { white-space: nowrap; }
+      .muted { color: var(--muted); }
+      .small { font-size: 8.4pt; }
+
+      .pill {
+        display: inline-block;
+        font-size: 7.3pt;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border-radius: 999px;
+        padding: 2px 7px;
+        white-space: nowrap;
+      }
+      .p-red { background: #fdecea; color: #8f1d14; border: 1px solid #f4c7c3; }
+      .p-amber { background: #fff4e0; color: #8a4b0f; border: 1px solid #f2d6a8; }
+      .p-green { background: #e6f6ef; color: #0a5c4a; border: 1px solid #bfe6d7; }
+      .p-gray { background: #f1f4f3; color: #52625d; border: 1px solid #dde5e2; }
+
+      /* ---------- linha do tempo ---------- */
+      .timeline {
+        margin-top: 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .tl-item {
+        display: grid;
+        grid-template-columns: 30mm 1fr 21mm;
+        gap: 10px;
+        padding: 11px 14px;
+        border-bottom: 1px solid #e8efec;
+        background: #ffffff;
+      }
+      .tl-item { break-inside: avoid; }
+      .tl-item:last-child { border-bottom: 0; }
+      .tl-item.doing { background: #fbfdfc; }
+      .tl-when {
+        font-size: 8.4pt;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .tl-when b {
+        display: block;
+        font-size: 10.3pt;
+        color: var(--green-900);
+        letter-spacing: -0.01em;
+      }
+      .tl-title { font-weight: 700; font-size: 9.8pt; color: var(--green-900); }
+      .tl-desc { font-size: 8.9pt; color: #344640; margin-top: 3px; }
+      .tl-files { font-size: 8.2pt; color: var(--muted); margin-top: 3px; }
+      .tl-badge { text-align: right; }
+
+      /* ---------- cobertura ---------- */
+      .bars { margin-top: 8px; }
+      .bar-row {
+        display: grid;
+        grid-template-columns: 48mm 1fr 17mm;
+        align-items: center;
+        gap: 8px;
+        margin: 5px 0;
+        font-size: 8.7pt;
+      }
+      .bar-track {
+        height: 7px;
+        border-radius: 999px;
+        background: #edf3f0;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #0a8f6f, #0a5c4a);
+      }
+      .bar-fill.low { background: linear-gradient(90deg, #d97706, #b45309); }
+      .bar-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+      /* ---------- cards de ação ---------- */
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 11px 13px;
+        background: #ffffff;
+      }
+      .card h4 {
+        font-size: 9.6pt;
+        color: var(--green-900);
+        margin-bottom: 4px;
+      }
+      .card p { font-size: 8.8pt; color: #3c4d47; }
+      .card .tag {
+        display: inline-block;
+        margin-bottom: 6px;
+        font-size: 7.2pt;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: var(--green-600);
+      }
+
+      .sprint {
+        margin-top: 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .sprint-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 13px;
+        background: #eff6f3;
+        border-bottom: 1px solid var(--line);
+      }
+      .sprint-head h4 { font-size: 10.2pt; color: var(--green-900); }
+      .sprint-head .when {
+        margin-left: auto;
+        font-size: 8.2pt;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .sprint-body { padding: 4px 13px 9px; }
+      .sprint-body li { font-size: 8.9pt; margin: 4px 0; }
+      .accept {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px dashed #d6e3de;
+        font-size: 8.4pt;
+        color: #476058;
+      }
+      .accept b { color: var(--green-900); }
+
+      .footer-note {
+        margin-top: 16px;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+        font-size: 7.9pt;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .page-break { break-before: page; }
+      .avoid { break-inside: avoid; }
+
+      /* anexo */
+      .files {
+        columns: 2;
+        column-gap: 14px;
+        margin-top: 7px;
+        font-size: 7.8pt;
+      }
+      .files div {
+        break-inside: avoid;
+        padding: 1.6px 0;
+        color: #344640;
+        border-bottom: 1px dotted #e4ece8;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="eyebrow">Relatório técnico · Lab Notes / Dashboards · UNICAP</div>
+      <h1>O que mudou hoje, o que ficou<br />mais seguro e o que ainda falta</h1>
+      <p class="sub">
+        Consolidação das entregas de 09/11/2026 (autorização por papel, conta de
+        demonstração, persistência de “Minhas Anotações”) com medição de testes e
+        uma leitura crítica do código para orientar as próximas mudanças.
+      </p>
+      <dl class="meta">
+        <div><dt>Data</dt><dd>09/11/2026</dd></div>
+        <div><dt>Branch</dt><dd>main</dd></div>
+        <div><dt>Commits do dia</dt><dd>1d39880 · bc6261d</dd></div>
+        <div><dt>Estado</dt><dd>2 commits + 23 arquivos em revisão</dd></div>
+      </dl>
+    </header>
+
+    <div class="kpis">
+      <div class="kpi"><b>36</b><span>arquivos tocados hoje</span></div>
+      <div class="kpi"><b>+2.855</b><span>linhas adicionadas</span></div>
+      <div class="kpi"><b>74</b><span>novos testes unitários</span></div>
+      <div class="kpi"><b>82,92<small>%</small></b><span>cobertura de statements</span></div>
+    </div>
+
+    <section>
+      <h2 class="sec"><span class="n">RESUMO</span> O dia em uma página <small>leitura de 2 minutos</small></h2>
+      <p class="lead">
+        Hoje o sistema deixou de confiar no cliente para decidir <b>quem é o usuário</b> e
+        <b>o que ele pode escrever</b>. As mutações do Convex passaram a derivar autor e papel
+        da sessão autenticada, a conta de demonstração ganhou um fluxo próprio de entrada e a
+        tela de “Minhas Anotações” passou a preservar documentos, checklists e título entre
+        recarregamentos. Em paralelo, a suíte cresceu 74 testes unitários e 1 teste e2e,
+        chegando a 251 + 27 verificações.
+      </p>
+      <div class="grid2">
+        <div class="card">
+          <span class="tag">Ganho principal</span>
+          <h4>RBAC real no caminho de escrita</h4>
+          <p>
+            Criar/editar/excluir notas, dashboards, membros, perfis e projetos agora exige
+            papel compatível no servidor. O cliente não envia mais <code>actor</code> nem
+            escolhe o dono do projeto.
+          </p>
+        </div>
+        <div class="card">
+          <span class="tag">Limite atual</span>
+          <h4>Leitura continua aberta</h4>
+          <p>
+            As queries de listagem não pedem sessão. Quem tiver a URL do deployment lê notas,
+            dashboards, membros e atividade. É o risco mais alto que sobrou do dia.
+          </p>
+        </div>
+      </div>
+      <div class="note">
+        <b>Como este relatório foi produzido.</b> Diff completo dos dois commits e do working
+        tree, leitura dos módulos citados, <code>vitest run --coverage</code> (26 arquivos,
+        251 testes), <code>tsc -b --noEmit</code>, <code>biome check .</code> e
+        <code>playwright test</code> (27 testes). Nenhum código foi alterado para produzir o PDF.
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sec"><span class="n">01</span> Linha do tempo do dia <small>horários em UTC</small></h2>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-when"><b>11:59</b>1d39880</div>
+          <div>
+            <div class="tl-title">Backend com permissões por papel e conta de demonstração</div>
+            <div class="tl-desc">
+              Nasce <code>convex/permissions.ts</code> com a hierarquia viewer &lt; editor &lt;
+              admin, guards de projeto e derivação de papel por convite. Entra também o módulo
+              de contas locais que espelha o contrato do Convex Auth no protótipo.
+            </div>
+            <div class="tl-files">10 arquivos · +2.127 linhas · 8 arquivos de teste/helper</div>
+          </div>
+          <div class="tl-badge"><span class="pill p-green">backend</span></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-when"><b>13:10</b>bc6261d</div>
+          <div>
+            <div class="tl-title">Persiste “Minhas Anotações” e permite renomear o título</div>
+            <div class="tl-desc">
+              Documentos, checklists e seleção deixam de viver só em memória: são gravados em
+              <code>labnotes-docs-v1</code> a cada alteração e restaurados ao reabrir. O título
+              ganha edição inline com Enter/blur para salvar e Esc para descartar.
+            </div>
+            <div class="tl-files">3 arquivos · +264/−8 · 3 testes novos</div>
+          </div>
+          <div class="tl-badge"><span class="pill p-green">frontend</span></div>
+        </div>
+        <div class="tl-item doing">
+          <div class="tl-when"><b>13:33</b>working tree</div>
+          <div>
+            <div class="tl-title">Endurecimento P1: escrita autenticada e modo leitura para viewer</div>
+            <div class="tl-desc">
+              Mutations passam a exigir sessão/papel; seed vira <code>ensureWorkspace</code>
+              autenticado; login local valida credenciais de verdade; UI esconde ações de
+              escrita para viewer; testes e e2e acompanham a nova conta de teste.
+            </div>
+            <div class="tl-files">23 arquivos · +464/−191 · ainda não commitado</div>
+          </div>
+          <div class="tl-badge"><span class="pill p-amber">em revisão</span></div>
+        </div>
+      </div>
+      <p class="small muted" style="margin-top: 6px">
+        Totais únicos: 36 arquivos, +2.855/−199 linhas. O working tree não foi commitado nesta tarefa.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="sec"><span class="n">02</span> Mudanças em detalhe <small>o que cada entrega alterou</small></h2>
+
+      <h3 class="sub">2.1 Autorização: do cliente para a sessão</h3>
+      <table class="avoid">
+        <thead>
+          <tr>
+            <th style="width: 31mm">Superfície</th>
+            <th>Antes</th>
+            <th>Depois de hoje</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Notas</b></td>
+            <td>Cliente enviava <code>actor</code>; qualquer chamada era aceita.</td>
+            <td><code>requireRole(ctx, "editor")</code> em criar, editar, mover e excluir; autoria vem de <code>user.name</code>.</td>
+          </tr>
+          <tr>
+            <td><b>Dashboards</b></td>
+            <td>Sem verificação de papel na escrita.</td>
+            <td>Escrita exige editor; exclusão exige admin (notas são desvinculadas, não apagadas).</td>
+          </tr>
+          <tr>
+            <td><b>Membros</b></td>
+            <td>Convidar, trocar papel e remover sem guarda.</td>
+            <td><code>requireAdmin</code> nas três mutações.</td>
+          </tr>
+          <tr>
+            <td><b>Perfis</b></td>
+            <td>Papel escolhido pelo cliente; edição livre.</td>
+            <td>Só o próprio perfil; papel só admin altera; papel inicial derivado dos convites.</td>
+          </tr>
+          <tr>
+            <td><b>Projetos</b></td>
+            <td><code>createdBy</code> vinha do cliente.</td>
+            <td>Criador sai da sessão e entra como <code>owner</code>; editar/excluir/membros exigem gestão do projeto.</td>
+          </tr>
+          <tr>
+            <td><b>Atividade e sync</b></td>
+            <td>Sem autoria confiável; sync Firestore livre.</td>
+            <td>Atividade usa o nome da sessão; ligar/desligar réplica exige admin.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub">2.2 Conta de demonstração e login local</h3>
+      <ul>
+        <li>
+          <b>Botão “Entrar com a conta de demonstração”</b> na tela de acesso: tenta
+          <code>signIn</code> e, se a conta ainda não existir no Convex, faz <code>signUp</code>
+          e deixa o seed criar o workspace.
+        </li>
+        <li>
+          <b>Credenciais documentadas na UI:</b> <code>ana@unicap.br</code> / <code>Senha1234</code>,
+          papel admin. Contas novas entram como <b>viewer</b> — o mesmo critério do backend para
+          quem ainda não foi convidado.
+        </li>
+        <li>
+          <b>Modo local deixou de aceitar qualquer senha:</b> <code>localAccounts.ts</code> valida
+          e-mail único, senha mínima de 8 caracteres e par e-mail/senha. O <code>AppRouter</code>
+          consome esse módulo, então o protótipo e o Convex Auth se comportam igual.
+        </li>
+        <li>
+          <b>Senha mínima no servidor:</b> <code>validatePasswordRequirements</code> no provedor
+          Password; e-mail normalizado para minúsculas no perfil.
+        </li>
+      </ul>
+
+      <h3 class="sub">2.3 Interface: viewer vira somente leitura</h3>
+      <table class="avoid">
+        <thead>
+          <tr>
+            <th style="width: 38mm">Tela</th>
+            <th>Comportamento para viewer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Anotações (grade/lista)</td><td>Botão “Nova anotação” desabilitado, status somente leitura, sem Editar/Excluir, faixa “Modo leitura” no topo.</td></tr>
+          <tr><td>Kanban / sprints</td><td>Cards não arrastáveis, sem “+”, sem criar/renomear/excluir sprint.</td></tr>
+          <tr><td>Templates</td><td>“Usar modelo” desabilitado com dica de permissão.</td></tr>
+          <tr><td>Dashboards</td><td>Ação “Excluir” visível apenas para admin (espelha o backend).</td></tr>
+          <tr><td>Documentos</td><td>Criação/importação bloqueadas; título editável só para quem edita.</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub">2.4 “Minhas Anotações”: persistência e título</h3>
+      <p class="lead">
+        O estado da janela (documentos, checklist e documento selecionado) é carregado de forma
+        preguiçosa na montagem, com fallback para os dados de exemplo quando o storage está vazio
+        ou corrompido, e regravado a cada mudança. A seleção é validada contra a lista, evitando
+        apontar para um documento que não existe mais. O título passou a ser um campo inline:
+        Enter ou blur confirma, Esc descarta, título vazio volta ao anterior e a lista/label de
+        edição é atualizada junto.
+      </p>
+      <div class="warn">
+        <b>Escopo importante:</b> esses documentos continuam <b>fora do Convex</b> e sem
+        <code>projectId</code>. As rotas <code>/app/p/:id/documents</code> mostram a mesma lista
+        global, e o conteúdo não sincroniza entre navegadores nem passa pelas permissões do
+        servidor. A persistência de hoje resolve o “sumiu ao trocar de janela”, não o
+        compartilhamento.
+      </div>
+
+      <h3 class="sub">2.5 Testes adicionados</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Arquivo novo</th>
+            <th class="num">Testes</th>
+            <th>O que cobre</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>backendDb.test.ts</code></td><td class="num">23</td><td>Handlers do banco com contexto falso: notas, dashboards, membros, projetos, perfis.</td></tr>
+          <tr><td><code>backendHooks.test.ts</code></td><td class="num">12</td><td>Ponte reativa, normalização de patch e seed autenticado.</td></tr>
+          <tr><td><code>noteForm.test.tsx</code></td><td class="num">9</td><td>Formulário de nota: validações, período, tags e fechamento.</td></tr>
+          <tr><td><code>backendPermissions.test.ts</code></td><td class="num">8</td><td>Hierarquia de papéis e guards de projeto.</td></tr>
+          <tr><td><code>localAccounts.test.ts</code></td><td class="num">7</td><td>Cadastro, duplicidade, senha mínima e autenticação local.</td></tr>
+          <tr><td><code>authDemo.test.tsx</code></td><td class="num">6</td><td>Entrada demo, credenciais inválidas e viewer em modo leitura.</td></tr>
+          <tr><td><code>dashboardsPage.test.tsx</code></td><td class="num">6</td><td>Lista de dashboards, criação e permissões na UI.</td></tr>
+          <tr><td><code>documentsPersist.test.tsx</code></td><td class="num">3</td><td>Renomear título, criar documento e checklist após remontar.</td></tr>
+        </tbody>
+      </table>
+      <p class="small muted" style="margin-top: 5px">
+        Total: 74 testes unitários novos em 8 arquivos + 1 e2e novo (credenciais inválidas).
+        Os testes de backend usam <code>fakeConvex.ts</code>; não substituem um deployment real.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2 class="sec"><span class="n">03</span> Qualidade medida hoje <small>números da árvore de trabalho às 13:33</small></h2>
+
+      <div class="kpis" style="margin-top: 6px">
+        <div class="kpi"><b>251</b><span>testes unitários · 26 arquivos</span></div>
+        <div class="kpi"><b>27</b><span>testes e2e · 7 specs</span></div>
+        <div class="kpi"><b>73,63<small>%</small></b><span>cobertura de branches</span></div>
+        <div class="kpi"><b>0</b><span>erros de tsc e biome</span></div>
+      </div>
+
+      <h3 class="sub">Cobertura global (Vitest v8)</h3>
+      <div class="bars">
+        <div class="bar-row"><span>Statements</span><span class="bar-track"><span class="bar-fill" style="width: 82.92%"></span></span><span class="bar-val">82,92%</span></div>
+        <div class="bar-row"><span>Branches</span><span class="bar-track"><span class="bar-fill" style="width: 73.63%"></span></span><span class="bar-val">73,63%</span></div>
+        <div class="bar-row"><span>Functions</span><span class="bar-track"><span class="bar-fill" style="width: 78.85%"></span></span><span class="bar-val">78,85%</span></div>
+        <div class="bar-row"><span>Lines</span><span class="bar-track"><span class="bar-fill" style="width: 84.96%"></span></span><span class="bar-val">84,96%</span></div>
+      </div>
+
+      <h3 class="sub">Onde a cobertura ainda é baixa</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Arquivo</th>
+            <th class="num">Linhas</th>
+            <th class="num">Branches</th>
+            <th>Faixa descoberta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>dashboards/TeamPageView.tsx</code></td><td class="num">46,53%</td><td class="num">57,14%</td><td>Menu de ações e convite/edição de membros</td></tr>
+          <tr><td><code>app/router/AppRouter.tsx</code></td><td class="num">57,53%</td><td class="num">38,59%</td><td>Refresh de sessão, redirecionamentos e fallback</td></tr>
+          <tr><td><code>templates/TemplatesPageView.tsx</code></td><td class="num">64,91%</td><td class="num">72,97%</td><td>Modal “Criar Modelo” e validações (67, 175–258)</td></tr>
+          <tr><td><code>trash/TrashPageView.tsx</code></td><td class="num">68,42%</td><td class="num">70,83%</td><td>Diálogos de exclusão definitiva</td></tr>
+          <tr><td><code>dashboards/store.tsx</code></td><td class="num">68,57%</td><td class="num">47,50%</td><td>Convites, remoção e updates concorrentes</td></tr>
+          <tr><td><code>notes/NotesBoardView.tsx</code></td><td class="num">70,40%</td><td class="num">62,88%</td><td>Drag &amp; drop e edição inline no card</td></tr>
+          <tr><td><code>convex/projects.ts</code></td><td class="num">72,72%</td><td class="num">42,10%</td><td>Regras de projeto/membros e branches de erro</td></tr>
+          <tr><td><code>convex/profiles.ts</code></td><td class="num">74,00%</td><td class="num">57,69%</td><td>Avatar, atualização parcial e autorização</td></tr>
+        </tbody>
+      </table>
+
+      <div class="warn">
+        <b>Instabilidade detectada na verificação.</b> Em uma das três execuções da suíte,
+        <code>dashboardsStore.test.tsx → “createDashboard adiciona no topo com id e datas gerados”</code>
+        falhou porque <code>createdAt</code> e <code>updatedAt</code> caíram em milissegundos
+        diferentes (<code>…905Z</code> vs <code>…906Z</code>). O teste exige igualdade exata e o
+        store chama o relógio duas vezes — é flake de borda de milissegundo, não regressão
+        funcional, mas precisa ser eliminado (um único timestamp por criação).
+      </div>
+
+      <p class="note" style="margin-top: 10px">
+        <b>Como interpretar a cobertura.</b> Ela mede apenas testes unitários/integração em jsdom.
+        Os 27 testes e2e não entram no percentual e rodam em <code>--mode test</code> (modo local),
+        portanto não exercitam o Convex real. Os handlers são validados contra um contexto falso:
+        índices ausentes e campos de sistema em <code>replace</code> não falham nesse ambiente.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2 class="sec"><span class="n">04</span> O que continua frágil <small>achados confirmados no código de hoje</small></h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 13mm">Risco</th>
+            <th>Problema</th>
+            <th style="width: 58mm">Evidência</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill p-red">P0</span></td>
+            <td><b>Queries de leitura públicas.</b> Qualquer cliente com a URL do Convex lê notas, dashboards, membros, projetos e atividade — as guards de hoje cobrem só a escrita.</td>
+            <td><code>notes.ts:101</code>, <code>dashboards.ts:10</code>, <code>members.ts:12</code>, <code>projects.ts:76/107/285/312</code>, <code>seed.ts:194</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-red">P0</span></td>
+            <td><b>Identidade ainda escolhida pelo cliente em <code>listProjectsForUser</code>:</b> recebe <code>userId</code> e consulta o índice <code>by_user</code> sem confrontar com a sessão.</td>
+            <td><code>convex/projects.ts:107–125</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-red">P0</span></td>
+            <td><b>“Minhas Anotações” fora do backend e sem escopo de projeto:</b> localStorage global, sem backup, sem RBAC e sem separação por projeto.</td>
+            <td><code>DocumentsPageView.tsx:16–60</code>; schema sem tabela de documentos</td>
+          </tr>
+          <tr>
+            <td><span class="pill p-red">P0</span></td>
+            <td><b>Modo demo silencioso:</b> sem <code>VITE_CONVEX_URL</code> (ou com loopback em navegador remoto) o app cai para o protótipo sem avisar; credenciais admin ficam no bundle e a senha local é texto puro.</td>
+            <td><code>shared/backend/config.ts:47</code>; <code>localAccounts.ts:31–32/103</code>; <code>permissions.ts:33</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-red">P0</span></td>
+            <td><b><code>db.replace</code> com campos de sistema</b> ao atualizar projeto e dashboard: o objeto inclui <code>_id</code>/<code>_creationTime</code>, mascarado por cast e nunca testado contra o Convex real.</td>
+            <td><code>projects.ts:179</code>; <code>dashboards.ts:68</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-amber">P1</span></td>
+            <td><b>Sem paginação:</b> 19 <code>.collect()</code> sem limite. <code>roleForEmail</code> varre membros a cada request e <code>members</code> não tem índice por e-mail; <code>activity</code> não tem índice.</td>
+            <td><code>permissions.ts</code>, <code>convex/schema.ts</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-amber">P1</span></td>
+            <td><b>Componentes gigantes:</b> 1.009 linhas em <code>NotesPageView</code>, 763 em <code>DocumentsPageView</code>, 620 em <code>TeamPageView</code>; estado, modais e regras no mesmo arquivo.</td>
+            <td>contagem de linhas da árvore atual</td>
+          </tr>
+          <tr>
+            <td><span class="pill p-amber">P1</span></td>
+            <td><b>Hooks condicionais latentes</b> na ponte local/Convex (retorno antes de <code>useQuery</code>), hoje mascarados pelo modo ser constante.</td>
+            <td><code>shared/backend/hooks.ts:75–107</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-amber">P1</span></td>
+            <td><b>Editor rico caseiro:</b> sanitização manual por allowlist, <code>execCommand</code> depreciado e <code>window.prompt</code> para links; caminho de link é justamente o trecho sem teste.</td>
+            <td><code>notes/RichText.tsx:97/190/200</code>; <code>export.ts:283–287</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-amber">P1</span></td>
+            <td><b>Sem ErrorBoundary</b> e erros engolidos em <code>catch</code> vazios: uma exceção de render derruba a árvore; falha de seed só vai para o console.</td>
+            <td><code>src/app/App.tsx</code>; <code>hooks.ts</code>; varredura de <code>catch {}</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-gray">P2</span></td>
+            <td><b>Sem gate de cobertura</b> no CI e teste instável de timestamp; <code>verify:report:sh</code> segue como stub; <code>firebase</code> é dependência sem uso, com config/API key hardcoded.</td>
+            <td><code>package.json</code>; <code>vitest.config.ts</code>; <code>src/shared/firebase.ts</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub">Matriz de acesso após as mudanças de hoje</h3>
+      <table class="avoid">
+        <thead>
+          <tr>
+            <th style="width: 34mm">Recurso</th>
+            <th>Leitura</th>
+            <th>Escrita</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Notas</td><td><span class="pill p-red">aberta</span></td><td><span class="pill p-green">editor</span></td><td>Autoria pela sessão</td></tr>
+          <tr><td>Dashboards</td><td><span class="pill p-red">aberta</span></td><td><span class="pill p-green">editor / admin</span></td><td>Excluir só admin</td></tr>
+          <tr><td>Membros</td><td><span class="pill p-red">aberta</span></td><td><span class="pill p-green">admin</span></td><td>Convite por e-mail</td></tr>
+          <tr><td>Projetos</td><td><span class="pill p-red">aberta</span></td><td><span class="pill p-green">editor / manager</span></td><td>Criador vira owner</td></tr>
+          <tr><td>Perfis</td><td><span class="pill p-red">aberta</span></td><td><span class="pill p-green">próprio</span></td><td>Papel só admin</td></tr>
+          <tr><td>Documentos</td><td><span class="pill p-gray">localStorage</span></td><td><span class="pill p-gray">cliente</span></td><td>Sem projectId</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2 class="sec"><span class="n">05</span> Próximos passos <small>o que mudar, em que ordem e como saber que ficou pronto</small></h2>
+
+      <div class="sprint avoid">
+        <div class="sprint-head">
+          <h4>Onda 1 — Fechar o risco de leitura e tirar documentos do navegador</h4>
+          <span class="when">2–3 dias · P0</span>
+        </div>
+        <div class="sprint-body">
+          <ol>
+            <li><b>Autenticar as queries de listagem</b> com <code>requireUser</code> (ou <code>requireRole(ctx, "viewer")</code>) em notas, dashboards, membros, projetos, atividade e perfis públicos. Ajustar hooks e testes.</li>
+            <li><b>Derivar o usuário do projeto da sessão:</b> remover o argumento <code>userId</code> de <code>listProjectsForUser</code> e filtrar por <code>user.email</code>.</li>
+            <li><b>Levar “Minhas Anotações” para o schema Convex</b> com <code>projectId</code>, dono, título, blocos/HTML, timestamps e índice por projeto; CRUD com papel editor; migrar <code>labnotes-docs-v1</code> na primeira carga e remover a gravação local.</li>
+            <li><b>Trocar <code>replace</code> por <code>patch</code></b> (ou projetar somente campos de domínio) em projetos e dashboards.</li>
+            <li><b>Proteger a conta demo:</b> habilitar só em desenvolvimento por flag explícita, exibir faixa de “modo demonstração” no app e não publicar a senha na tela em produção; trocar a senha local em texto puro por hash WebCrypto.</li>
+          </ol>
+          <div class="accept">
+            <b>Pronto quando:</b> uma chamada anônima a <code>notes.list</code> retorna erro de
+            autenticação; documento criado no projeto A não aparece no projeto B; e o e2e cobre
+            login viewer + tentativa de escrita bloqueada.
+          </div>
+        </div>
+      </div>
+
+      <div class="sprint avoid">
+        <div class="sprint-head">
+          <h4>Onda 2 — Escala, manutenção e confiabilidade</h4>
+          <span class="when">3–4 dias · P1</span>
+        </div>
+        <div class="sprint-body">
+          <ol>
+            <li><b>Paginação + índices:</b> cursor de 50 itens em notas/atividade, índice <code>members.by_email</code>, <code>activity.by_createdAt</code>, notas por dashboard e por prazo; medir com volume semeado.</li>
+            <li><b>Quebrar os arquivos grandes:</b> extrair toolbar, filtros, card, modal e persistência de <code>NotesPageView</code> e <code>DocumentsPageView</code>; alvo de até ~300 linhas por arquivo.</li>
+            <li><b>Corrigir a ponte local/Convex:</b> separar em dois componentes/providers para eliminar hooks condicionais; manter a mesma API para as views.</li>
+            <li><b>ErrorBoundary + estados de erro:</b> fallback por rota, retry nos seeds e toasts no lugar dos <code>catch</code> vazios.</li>
+            <li><b>Editor rico:</b> diálogo acessível de link, remover <code>execCommand</code>/<code>prompt</code> e ampliar testes de XSS e colagem.</li>
+            <li><b>Qualidade:</b> corrigir o timestamp duplicado do store, rodar cobertura 3× no CI para pegar flakes e definir thresholds (linhas ≥ 80%, branches ≥ 70%).</li>
+          </ol>
+          <div class="accept">
+            <b>Pronto quando:</b> nenhum arquivo de feature passa de 300 linhas; a suíte passa
+            3 execuções seguidas; CI falha se a cobertura cair abaixo do limite; listas carregam
+            em páginas com “carregar mais”.
+          </div>
+        </div>
+      </div>
+
+      <div class="sprint avoid">
+        <div class="sprint-head">
+          <h4>Onda 3 — Produto e operação</h4>
+          <span class="when">5–7 dias · evolução</span>
+        </div>
+        <div class="sprint-body">
+          <ol>
+            <li><b>Histórico de versões</b> de notas e documentos com restauração (a tabela <code>activity</code> já registra eventos; faltam snapshots).</li>
+            <li><b>Comentários e menções</b> com notificação real no sino, hoje apenas visual.</li>
+            <li><b>Busca global (⌘K)</b> no servidor, com índice e debounce — substitui filtros locais.</li>
+            <li><b>Convite por e-mail</b> com token, expiração e aceite, em vez de inserir membro direto.</li>
+            <li><b>Backup/exportação em lote</b> (JSON/PDF) e importação de documentos para o backend.</li>
+            <li><b>Observabilidade:</b> Sentry para erros de render/Convex, analytics de uso e remoção do Firebase morto (ou ativação consciente da réplica).</li>
+          </ol>
+          <div class="accept">
+            <b>Pronto quando:</b> é possível restaurar uma versão anterior; notificações chegam
+            a quem foi mencionado; busca encontra nota por título/conteúdo sem carregar a tabela
+            inteira; erros de produção aparecem no monitoramento.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="sec"><span class="n">06</span> Funcionalidades recomendadas <small>impacto x esforço</small></h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Funcionalidade</th>
+            <th style="width: 22mm">Impacto</th>
+            <th style="width: 20mm">Esforço</th>
+            <th>Por que agora</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Sincronizar documentos por projeto</td><td><span class="pill p-green">alto</span></td><td><span class="pill p-amber">médio</span></td><td>Fecha a maior inconsistência funcional: a rota do projeto mostra conteúdo global.</td></tr>
+          <tr><td>Histórico e restauração</td><td><span class="pill p-green">alto</span></td><td><span class="pill p-amber">médio</span></td><td>O sistema já registra autoria; falta poder voltar atrás em edições.</td></tr>
+          <tr><td>Busca global no servidor</td><td><span class="pill p-green">alto</span></td><td><span class="pill p-amber">médio</span></td><td>Hoje cada tela filtra a própria lista; com paginação isso deixa de bastar.</td></tr>
+          <tr><td>Comentários + menções</td><td><span class="pill p-green">alto</span></td><td><span class="pill p-amber">médio</span></td><td>Colaboração é o centro do produto e o sino já existe.</td></tr>
+          <tr><td>Convite com aceite</td><td><span class="pill p-amber">médio</span></td><td><span class="pill p-green">baixo</span></td><td>Admin adiciona membro sem consentimento hoje; token resolve e melhora a auditoria.</td></tr>
+          <tr><td>Exportação/backup em lote</td><td><span class="pill p-amber">médio</span></td><td><span class="pill p-green">baixo</span></td><td>A exportação existe por documento; falta visão de workspace.</td></tr>
+          <tr><td>PWA offline com fila</td><td><span class="pill p-amber">médio</span></td><td><span class="pill p-amber">médio</span></td><td>Uso em laboratório com rede instável; combina com o cache local já existente.</td></tr>
+          <tr><td>Painel de permissões/auditoria</td><td><span class="pill p-amber">médio</span></td><td><span class="pill p-green">baixo</span></td><td>RBAC pronto no backend; falta tornar papéis visíveis e gerenciáveis.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 class="sec" style="margin-top: 18px"><span class="n">07</span> Como o resultado foi verificado</h2>
+      <table>
+        <thead>
+          <tr><th>Comando</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>bun run test</code></td><td>26 arquivos, <b>251/251</b> testes aprovados</td></tr>
+          <tr><td><code>bun run test:coverage</code></td><td>82,92% statements · 73,63% branches · 78,85% functions · 84,96% lines</td></tr>
+          <tr><td><code>bunx playwright test --workers=3</code></td><td><b>27/27</b> e2e aprovados (52,5 s)</td></tr>
+          <tr><td><code>bunx tsc -b --noEmit</code></td><td>sem erros</td></tr>
+          <tr><td><code>bun run lint</code> (biome)</td><td>sem erros</td></tr>
+        </tbody>
+      </table>
+
+      <h2 class="sec" style="margin-top: 18px"><span class="n">08</span> Limitações e riscos desta medição</h2>
+      <ul>
+        <li><b>Cobertura só de unitários:</b> os 27 e2e não entram no percentual; CSS global e barrels aparecem com 0% por não serem testáveis dessa forma.</li>
+        <li><b>Convex não validado em runtime:</b> <code>convex dev --once</code> não roda neste host (biblioteca GLIBC incompatível), então tipos gerados e semântica real de <code>replace</code>/índices não foram exercitados; os testes de backend usam contexto falso.</li>
+        <li><b>E2E em modo local:</b> a suíte sobe o Vite com <code>--mode test</code>, ou seja, valida o protótipo, não as guards do backend.</li>
+        <li><b>Working tree:</b> o relatório reflete os 23 arquivos ainda não commitados; se forem alterados antes do commit, os números precisam ser reconferidos.</li>
+        <li><b>Flake:</b> uma execução em três falhou no teste de timestamp do store; as demais passaram com os mesmos 251 testes.</li>
+      </ul>
+
+    </section>
+
+    <section>
+      <h2 class="sec"><span class="n">ANEXO</span> Arquivos tocados hoje</h2>
+      <div class="files">
+        <div>convex/auth.ts</div>
+        <div>convex/dashboards.ts</div>
+        <div>convex/firestore.ts</div>
+        <div>convex/members.ts</div>
+        <div>convex/notes.ts</div>
+        <div>convex/permissions.ts</div>
+        <div>convex/profiles.ts</div>
+        <div>convex/projects.ts</div>
+        <div>convex/seed.ts</div>
+        <div>convex/users.ts</div>
+        <div>e2e/acesso.spec.ts</div>
+        <div>e2e/apoio.ts</div>
+        <div>src/app/App.tsx</div>
+        <div>src/app/pages/AuthPage.tsx</div>
+        <div>src/app/router/AppRouter.tsx</div>
+        <div>src/features/dashboards/DashboardsPageView.tsx</div>
+        <div>src/features/documents/DocumentsPageView.tsx</div>
+        <div>src/features/notes/NoteStatusChip.tsx</div>
+        <div>src/features/notes/NotesBoardView.tsx</div>
+        <div>src/features/notes/NotesListView.tsx</div>
+        <div>src/features/notes/NotesPageView.tsx</div>
+        <div>src/features/templates/TemplatesPageView.tsx</div>
+        <div>src/shared/auth/localAccounts.ts</div>
+        <div>src/shared/backend/hooks.ts</div>
+        <div>src/tests/authDemo.test.tsx</div>
+        <div>src/tests/authFlow.test.tsx</div>
+        <div>src/tests/backendDb.test.ts</div>
+        <div>src/tests/backendHooks.test.ts</div>
+        <div>src/tests/backendPermissions.test.ts</div>
+        <div>src/tests/dashboardsPage.test.tsx</div>
+        <div>src/tests/documentsPersist.test.tsx</div>
+        <div>src/tests/helpers/fakeConvex.ts</div>
+        <div>src/tests/localAccounts.test.ts</div>
+        <div>src/tests/navigation.test.tsx</div>
+        <div>src/tests/noteForm.test.tsx</div>
+        <div>src/tests/setup.ts</div>
+      </div>
+
+      <div class="footer-note">
+        <span>Lab Notes / Dashboards · Relatório gerado em 09/11/2026 · commits 1d39880, bc6261d + working tree</span>
+        <span>Uso interno · UNICAP</span>
+      </div>
+    </section>
+  </body>
+</html>
