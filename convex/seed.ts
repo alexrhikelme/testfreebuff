@@ -1,20 +1,17 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireUser, type SessionUser } from "./permissions";
 
 /**
  * Sprint 8 (D1) — Sementes do protótipo migradas para o banco.
- * Executada automaticamente pelo NotesProvider na primeira carga
- * (idempotente: só insere se a tabela estiver vazia).
+ * Sprint 11 (P1) — `ensureWorkspace` é autenticado e roda no primeiro
+ * acesso: popula o workspace (idempotente), garante o perfil do usuário e,
+ * para a conta de demonstração (admin), o vínculo de admin em todos os
+ * dashboards — é assim que a conta de teste enxerga todos os registros.
  */
-/**
- * Pública e idempotente: só insere quando as tabelas estão vazias.
- * Quando o auth real (D3) chegar, isto deve virar função interna chamada
- * no primeiro acesso do usuário.
- */
-export const seedIfEmpty = mutation({
-  args: {},
-  returns: v.null(),
-  handler: async (ctx) => {
+
+/** Só insere quando as tabelas estão vazias (idempotente). */
+async function seedDemoData(ctx: { db: any }) {
     const anyNote = await ctx.db.query("notes").first();
     const anyDashboard = await ctx.db.query("dashboards").first();
 
@@ -125,7 +122,70 @@ export const seedIfEmpty = mutation({
       ];
       for (const n of notes) await ctx.db.insert("notes", n);
     }
+}
 
+/** Perfil de produto do usuário autenticado (idempotente por e-mail). */
+async function ensureProfileFor(ctx: { db: any }, user: SessionUser) {
+  const now = new Date().toISOString();
+  const existing = await ctx.db
+    .query("profiles")
+    .withIndex("by_email", (q: any) => q.eq("email", user.email))
+    .unique();
+
+  if (existing) {
+    await ctx.db.patch(existing._id, {
+      name: user.name,
+      role: user.role,
+      updatedAt: now,
+    });
+    return;
+  }
+  await ctx.db.insert("profiles", {
+    id: `profile-${user.userId}`,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
+/** Conta demo/desenvolvedor: admin membro de todos os dashboards. */
+async function grantAllDashboards(ctx: { db: any }, user: SessionUser) {
+  const dashboards: Array<{ id: string }> = await ctx.db
+    .query("dashboards")
+    .collect();
+  const members: Array<{ email: string; dashboardId: string }> = await ctx.db
+    .query("members")
+    .collect();
+  const now = new Date().toISOString();
+
+  for (const dashboard of dashboards) {
+    const already = members.some(
+      (m) =>
+        m.dashboardId === dashboard.id &&
+        m.email.trim().toLowerCase() === user.email
+    );
+    if (already) continue;
+    await ctx.db.insert("members", {
+      id: `member-demo-${dashboard.id}`,
+      name: user.name,
+      email: user.email,
+      role: "admin",
+      dashboardId: dashboard.id,
+      invitedAt: now,
+    });
+  }
+}
+
+export const ensureWorkspace = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    await seedDemoData(ctx);
+    await ensureProfileFor(ctx, user);
+    if (user.role === "admin") await grantAllDashboards(ctx, user);
     return null;
   },
 });

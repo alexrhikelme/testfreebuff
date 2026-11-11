@@ -7,7 +7,7 @@ import type {
   Member,
   MemberRole,
 } from "@/features/dashboards/types";
-import { CURRENT_USER, getBackendMode, makeId } from "./config";
+import { getBackendMode, makeId } from "./config";
 
 /**
  * Sprint 8 (D1) — Ponte reativa entre o app e o banco Convex.
@@ -59,13 +59,17 @@ function normalizeNotePatch(patch: Partial<NewNoteInput>) {
 
 const isConvex = () => getBackendMode() === "convex";
 
-/** Popula o banco na primeira carga do modo Convex (idempotente). */
-export function useSeedOnMount() {
-  const seed = useMutation(api.seed.seedIfEmpty);
+/**
+ * Sprint 11 (P1) — Popula o workspace no primeiro acesso autenticado.
+ * O seed exige sessão (o servidor resolve quem é o usuário), então só
+ * roda quando `enabled` é verdadeiro; continua idempotente no servidor.
+ */
+export function useSeedOnMount(enabled = true) {
+  const seed = useMutation(api.seed.ensureWorkspace);
   useEffect(() => {
-    if (!isConvex()) return;
+    if (!isConvex() || !enabled) return;
     void seed({}).catch((e) => console.error("seed falhou:", e));
-  }, [seed]);
+  }, [seed, enabled]);
 }
 
 export function useNotesQuery(): Note[] {
@@ -120,6 +124,8 @@ export function useNoteMutations() {
 
   return useMemo(
     () => ({
+      // P1 — a autoria vem da sessão no servidor; o cliente não envia mais
+      // `actor`, então não há como forjar quem editou.
       createNote: (input: NewNoteInput, id: string = makeId("note")) =>
         create({
           id,
@@ -131,13 +137,12 @@ export function useNoteMutations() {
           startDate: input.startDate,
           dueDate: input.dueDate,
           dashboardId: input.dashboardId,
-          actor: CURRENT_USER,
         }),
       updateNote: (id: string, patch: Partial<NewNoteInput>) =>
-        update({ id, patch: normalizeNotePatch(patch), actor: CURRENT_USER }),
+        update({ id, patch: normalizeNotePatch(patch) }),
       moveNote: (id: string, status: NoteStatus, order?: number) =>
-        move({ id, status, order, actor: CURRENT_USER }),
-      deleteNote: (id: string) => remove({ id, actor: CURRENT_USER }),
+        move({ id, status, order }),
+      deleteNote: (id: string) => remove({ id }),
     }),
     [create, update, move, remove]
   );

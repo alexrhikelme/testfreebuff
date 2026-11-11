@@ -1,7 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { getActorName } from "./actor";
+import { requireRole } from "./permissions";
 
 /** Compara "YYYY-MM-DD" sem interferência de fuso (espelha deadline.ts). */
 function parseDateOnly(iso: string): number {
@@ -117,11 +117,12 @@ export const create = mutation({
     startDate: v.optional(v.string()),
     dueDate: v.optional(v.string()),
     dashboardId: v.optional(v.string()),
-    actor: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const actor = await getActorName(ctx, args.actor);
+    // P1 — autoria e permissão vêm da sessão autenticada, nunca do cliente.
+    const user = await requireRole(ctx, "editor");
+    const actor = user.name;
     const periodError = validatePeriodServer(args.startDate, args.dueDate);
     if (periodError) throw new Error(periodError);
 
@@ -159,10 +160,10 @@ export const update = mutation({
   args: {
     id: v.string(),
     patch: v.object(optionalNotePatch),
-    actor: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await requireRole(ctx, "editor");
     const row = await getNoteById(ctx, args.id);
     if (!row) throw new Error("Nota não encontrada.");
 
@@ -172,7 +173,7 @@ export const update = mutation({
 
     const now = new Date().toISOString();
     next.updatedAt = now;
-    next.updatedBy = await getActorName(ctx, args.actor);
+    next.updatedBy = user.name;
     await ctx.db.replace(row._id as Id<"notes">, next as unknown as Doc<"notes">);
 
     const isStatusChange =
@@ -182,7 +183,7 @@ export const update = mutation({
       noteId: args.id,
       noteTitle: next.title,
       action: isStatusChange ? "status_changed" : "updated",
-      actor: await getActorName(ctx, args.actor),
+      actor: user.name,
       at: now,
     });
     return null;
@@ -194,15 +195,15 @@ export const move = mutation({
     id: v.string(),
     status: statusValidator,
     order: v.optional(v.number()),
-    actor: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await requireRole(ctx, "editor");
     const row = await getNoteById(ctx, args.id);
     if (!row) throw new Error("Nota não encontrada.");
 
     const now = new Date().toISOString();
-    const actor = await getActorName(ctx, args.actor);
+    const actor = user.name;
     const next: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(row)) {
       if (!SYSTEM_FIELDS.has(key)) next[key] = value;
@@ -228,9 +229,10 @@ export const move = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.string(), actor: v.string() },
+  args: { id: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await requireRole(ctx, "editor");
     const row = await getNoteById(ctx, args.id);
     if (!row) return null;
 
@@ -241,7 +243,7 @@ export const remove = mutation({
       noteId: args.id,
       noteTitle: row.title,
       action: "deleted",
-      actor: await getActorName(ctx, args.actor),
+      actor: user.name,
       at: now,
     });
     return null;
