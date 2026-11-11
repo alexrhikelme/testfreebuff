@@ -1,20 +1,15 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import type { Id } from "./_generated/dataModel";
+import { currentUser } from "./permissions";
 
 /**
  * Sprint 9 (D3) — Identidade do usuário autenticado.
  *
  * Retorna `null` quando não há sessão; caso contrário, os dados do usuário
- * com o papel derivado da tabela `members` (convite por e-mail): o papel
- * mais privilegiado entre os dashboards em que é membro. Sem registro de
- * membro → "viewer" (somente leitura até ser convidado).
+ * com o papel derivado em `permissions.ts` (convite por e-mail na tabela
+ * `members`). Sem registro → "viewer" até ser convidado.
  */
-const ROLE_RANK: Record<string, number> = {
-  viewer: 0,
-  editor: 1,
-  admin: 2,
-};
 
 export const me = query({
   args: {},
@@ -32,26 +27,13 @@ export const me = query({
     })
   ),
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
-
-    const user = await ctx.db.get(userId);
-    if (!user?.email) return null;
-
-    const allMembers = await ctx.db.query("members").collect();
-    const mine = allMembers.filter(
-      (m) => m.email.toLowerCase() === user.email!.toLowerCase()
-    );
-    let best = "viewer";
-    for (const m of mine) {
-      if (ROLE_RANK[m.role] > ROLE_RANK[best]) best = m.role;
-    }
-
+    const user = await currentUser(ctx);
+    if (!user) return null;
     return {
-      userId,
-      name: user.name ?? user.email,
+      userId: user.userId as Id<"users">,
+      name: user.name,
       email: user.email,
-      role: best as "admin" | "editor" | "viewer",
+      role: user.role,
     };
   },
 });

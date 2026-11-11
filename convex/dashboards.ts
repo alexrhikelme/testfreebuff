@@ -1,10 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
+import { requireAdmin, requireRole } from "./permissions";
 
 /**
- * Sprint 8 (D1) — Dashboards no banco. `actor` é o usuário simulado da
- * sessão; quando o auth real (D3) chegar, virá do contexto de autenticação.
+ * Sprint 8 (D1) — Dashboards no banco.
+ * Sprint 11 (P1) — Escrita exige papel `editor`; exclusão exige `admin`.
  */
 export const list = query({
   args: {},
@@ -22,6 +23,7 @@ export const create = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireRole(ctx, "editor");
     const name = args.name.trim();
     if (!name) throw new Error("O nome é obrigatório.");
     const now = new Date().toISOString();
@@ -44,6 +46,7 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireRole(ctx, "editor");
     const row = await ctx.db
       .query("dashboards")
       .withIndex("by_ref", (q) => q.eq("id", args.id))
@@ -75,6 +78,7 @@ export const remove = mutation({
   args: { id: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const row = await ctx.db
       .query("dashboards")
       .withIndex("by_ref", (q) => q.eq("id", args.id))

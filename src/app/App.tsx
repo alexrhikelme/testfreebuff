@@ -5,6 +5,7 @@ import { AppBackendProvider } from "@/shared/backend/AppBackendProvider";
 import { ToastProvider } from "@/shared/components/Toast";
 import { useSeedOnMount } from "@/shared/backend/hooks";
 import { getBackendMode } from "@/shared/backend/config";
+import { useConvexAuth } from "@convex-dev/auth/react";
 import { NotesProvider } from "@/features/notes";
 import { LabProvider } from "@/features/dashboards/store";
 import { TrashProvider } from "@/features/trash";
@@ -23,10 +24,12 @@ import "../styles/global.css";
 
 /**
  * Sprint 8 (D1) — Dispara o seed idempotente dentro do contexto Convex.
- * No modo local (protótipo/testes) é um no-op.
+ * Sprint 11 (P1) — O seed passou a exigir sessão: só dispara quando o
+ * Convex Auth confirma o login. No modo local é um no-op.
  */
 function ConvexSeedLauncher() {
-  useSeedOnMount();
+  const { isAuthenticated } = useConvexAuth();
+  useSeedOnMount(isAuthenticated);
   return null;
 }
 

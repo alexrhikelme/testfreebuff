@@ -12,10 +12,13 @@ export function NotesListView({
   notes,
   onEdit,
   onDelete,
+  canEdit = true,
 }: {
   notes: Note[];
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void;
+  /** P1 — perfil `viewer`: status somente leitura e sem ações. */
+  canEdit?: boolean;
 }) {
   const { updateNote } = useNotes();
 
@@ -65,6 +68,7 @@ export function NotesListView({
                 <td className="px-4 py-3">
                   <StatusSelect
                     status={note.status}
+                    disabled={!canEdit}
                     onChange={(s) => updateNote(note.id, { status: s })}
                   />
                 </td>
@@ -106,20 +110,26 @@ export function NotesListView({
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(note)}
-                    className="rounded px-2 py-1 text-xs font-medium text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(note.id)}
-                    className="rounded px-2 py-1 text-xs font-medium text-on-surface-variant transition hover:bg-error/10 hover:text-error"
-                  >
-                    Excluir
-                  </button>
+                  {canEdit ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onEdit(note)}
+                        className="rounded px-2 py-1 text-xs font-medium text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(note.id)}
+                        className="rounded px-2 py-1 text-xs font-medium text-on-surface-variant transition hover:bg-error/10 hover:text-error"
+                      >
+                        Excluir
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-on-surface-variant/60">—</span>
+                  )}
                 </td>
               </tr>
             );

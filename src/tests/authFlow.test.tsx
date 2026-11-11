@@ -86,9 +86,9 @@ describe("Rota protegida e returnTo", () => {
 
     await user.type(
       await screen.findByPlaceholderText("ana@unicap.br"),
-      "ana@lab.local"
+      "ana@unicap.br"
     );
-    await user.type(screen.getByPlaceholderText("••••••••"), "senha123");
+    await user.type(screen.getByPlaceholderText("••••••••"), "Senha1234");
     await user.click(submitButton("Entrar"));
 
     // O login local simula 300 ms de latência antes de navegar.
@@ -109,7 +109,7 @@ describe("Validações do formulário de acesso", () => {
     // 2) com e-mail, sem senha.
     await user.type(
       screen.getByPlaceholderText("ana@unicap.br"),
-      "ana@lab.local"
+      "ana@unicap.br"
     );
     await user.click(submitButton("Entrar"));
     await screen.findByText("Informe a senha.");
@@ -126,10 +126,12 @@ describe("Validações do formulário de acesso", () => {
     await screen.findByText("A senha deve ter pelo menos 8 caracteres.");
   });
 
-  it("mostra a dica de demonstração (dados simulados no navegador)", async () => {
+  it("divulga a conta de teste dos desenvolvedores", async () => {
     await openAt("/auth");
     expect(
-      await screen.findByText(/entre com qualquer e-mail e senha/)
+      await screen.findByText(/Conta de teste dos desenvolvedores/)
     ).toBeInTheDocument();
+    expect(screen.getByText(/ana@unicap\.br/)).toBeInTheDocument();
+    expect(screen.getByText(/Senha1234/)).toBeInTheDocument();
   });
 });

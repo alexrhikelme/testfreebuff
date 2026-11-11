@@ -35,19 +35,26 @@ export function NoteStatusChip({ status }: { status: NoteStatus }) {
 export function StatusSelect({
   status,
   onChange,
+  disabled = false,
 }: {
   status: NoteStatus;
   onChange: (status: NoteStatus) => void;
+  /** P1 — perfil `viewer` não troca status (o servidor também recusa). */
+  disabled?: boolean;
 }) {
   return (
     <span className="relative inline-flex shrink-0">
       <NoteStatusChip status={status} />
       <select
         value={status}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value as NoteStatus)}
         aria-label="Mudar status"
-        title="Mudar status"
-        className="absolute inset-0 cursor-pointer opacity-0"
+        title={disabled ? "Somente leitura" : "Mudar status"}
+        className={
+          "absolute inset-0 opacity-0 " +
+          (disabled ? "cursor-not-allowed" : "cursor-pointer")
+        }
       >
         {STATUS_ORDER.map((s) => (
           <option key={s} value={s}>

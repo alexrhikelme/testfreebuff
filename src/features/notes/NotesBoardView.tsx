@@ -97,6 +97,7 @@ export function NotesBoardView({
   onEdit,
   onDelete,
   onAddNote,
+  readOnly = false,
 }: {
   notes: Note[];
   onEdit: (note: Note) => void;
@@ -106,6 +107,8 @@ export function NotesBoardView({
    * o sprint em que o "+" foi clicado.
    */
   onAddNote?: (target: { status?: NoteStatus; sprintId?: string }) => void;
+  /** P1 — perfil `viewer`: sem arrastar, sem criar, sem editar/excluir. */
+  readOnly?: boolean;
 }) {
   const { moveNote, order, sprints, sprintOf, addSprint, renameSprint, removeSprint } =
     useNotes();
@@ -286,7 +289,7 @@ export function NotesBoardView({
                 >
                   {columnNotes.length}
                 </span>
-                {!col.isBase && (
+                {!readOnly && !col.isBase && (
                   <button
                     type="button"
                     onClick={() => setPendingDelete(col)}
@@ -300,22 +303,24 @@ export function NotesBoardView({
                     </svg>
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() =>
-                    onAddNote?.(
-                      col.isBase ? { status: col.status } : { sprintId: col.sprintId }
-                    )
-                  }
-                  aria-label={`Adicionar nota em ${col.title}`}
-                  title={`Adicionar nota em ${col.title}`}
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onAddNote?.(
+                        col.isBase ? { status: col.status } : { sprintId: col.sprintId }
+                      )
+                    }
+                    aria-label={`Adicionar nota em ${col.title}`}
+                    title={`Adicionar nota em ${col.title}`}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                )}
               </span>
             </header>
 
@@ -331,29 +336,33 @@ export function NotesBoardView({
                   note={note}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  readOnly={readOnly}
                 />
               ))}
-              <button
-                type="button"
-                onClick={() =>
-                  onAddNote?.(
-                    col.isBase ? { status: col.status } : { sprintId: col.sprintId }
-                  )
-                }
-                className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-outline-variant/50 px-3 py-2 text-xs font-medium text-on-surface-variant transition hover:border-brand/50 hover:text-brand-glow"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                Adicionar nota
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onAddNote?.(
+                      col.isBase ? { status: col.status } : { sprintId: col.sprintId }
+                    )
+                  }
+                  className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-outline-variant/50 px-3 py-2 text-xs font-medium text-on-surface-variant transition hover:border-brand/50 hover:text-brand-glow"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Adicionar nota
+                </button>
+              )}
             </div>
           </section>
         );
       })}
 
         {/* Montagem de sprints: cria uma nova coluna no quadro. */}
+        {!readOnly && (
         <button
           type="button"
           onClick={handleAddSprint}
@@ -365,6 +374,7 @@ export function NotesBoardView({
           </svg>
           Nova sprint
         </button>
+        )}
       </div>
 
       {pendingDelete && (
@@ -406,10 +416,12 @@ function BoardCard({
   note,
   onEdit,
   onDelete,
+  readOnly = false,
 }: {
   note: Note;
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void;
+  readOnly?: boolean;
 }) {
   /** Edição inline da descrição desativa o drag do card. */
   const [contentEditing, setContentEditing] = useState(false);
@@ -425,7 +437,7 @@ function BoardCard({
   return (
     <article
       data-note-id={note.id}
-      draggable={!contentEditing}
+      draggable={!contentEditing && !readOnly}
       onDragStart={(e) => {
         e.dataTransfer.setData("text/note-id", note.id);
         e.dataTransfer.effectAllowed = "move";
@@ -508,22 +520,24 @@ function BoardCard({
         <span className="truncate opacity-80">
           {note.assignee ?? "Sem responsável"}
         </span>
-        <span className="flex shrink-0 gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-          <button
-            type="button"
-            onClick={() => onEdit(note)}
-            className="rounded px-1.5 py-0.5 transition hover:bg-surface-container hover:text-on-surface"
-          >
-            Editar
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(note.id)}
-            className="rounded px-1.5 py-0.5 transition hover:bg-error/10 hover:text-error"
-          >
-            Excluir
-          </button>
-        </span>
+        {!readOnly && (
+          <span className="flex shrink-0 gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+            <button
+              type="button"
+              onClick={() => onEdit(note)}
+              className="rounded px-1.5 py-0.5 transition hover:bg-surface-container hover:text-on-surface"
+            >
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(note.id)}
+              className="rounded px-1.5 py-0.5 transition hover:bg-error/10 hover:text-error"
+            >
+              Excluir
+            </button>
+          </span>
+        )}
       </div>
     </article>
   );

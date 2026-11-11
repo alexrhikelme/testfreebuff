@@ -30,8 +30,8 @@ async function openAppAt(pathname: string) {
   render(<App />);
 
   const email = await screen.findByPlaceholderText("ana@unicap.br");
-  await user.type(email, "ana@lab.local");
-  await user.type(screen.getByPlaceholderText("••••••••"), "senha123");
+  await user.type(email, "ana@unicap.br");
+  await user.type(screen.getByPlaceholderText("••••••••"), "Senha1234");
   // Aba "Entrar" + botão de submit (mesmo rótulo): o último é o submit.
   const submit = screen.getAllByRole("button", { name: "Entrar" }).at(-1)!;
   await user.click(submit);

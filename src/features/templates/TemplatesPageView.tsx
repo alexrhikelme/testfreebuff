@@ -7,6 +7,8 @@ import {
   type TemplateTab,
 } from "./templates";
 import { useNotes } from "@/features/notes";
+import { useOptionalAuth } from "@/app/router/AppRouter";
+import { canEditDashboard } from "@/features/dashboards/store";
 import { useToast } from "@/shared/components/Toast";
 
 /**
@@ -23,6 +25,9 @@ export function TemplatesPageView({ projectId }: { projectId?: string } = {}) {
   const navigate = useNavigate();
   const { createNote } = useNotes();
   const { showToast } = useToast();
+  /** P1 — `viewer` não cria nota a partir de modelo. */
+  const { user } = useOptionalAuth();
+  const canEdit = canEditDashboard(user?.role ?? "admin");
   const [tab, setTab] = useState<Filter>("todos");
   const [query, setQuery] = useState("");
   const [custom, setCustom] = useState<Template[]>([]);
@@ -149,7 +154,9 @@ export function TemplatesPageView({ projectId }: { projectId?: string } = {}) {
                 <button
                   type="button"
                   onClick={() => useTemplate(t)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-surface-container px-4 py-2 text-sm font-semibold text-on-surface ring-1 ring-outline-variant/60 transition hover:border-brand hover:text-brand-glow hover:ring-brand/50 focus-ring-brand"
+                  disabled={!canEdit}
+                  title={canEdit ? undefined : "Seu perfil é somente leitura."}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-surface-container px-4 py-2 text-sm font-semibold text-on-surface ring-1 ring-outline-variant/60 transition hover:border-brand hover:text-brand-glow hover:ring-brand/50 focus-ring-brand disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Usar modelo
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

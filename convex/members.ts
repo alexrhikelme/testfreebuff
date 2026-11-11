@@ -1,9 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./permissions";
 
 /**
  * D2 — Validações de membro no backend: e-mail válido, papel do domínio e
  * exclusão de duplicatas por (e-mail, dashboard).
+ * P1 — Convidar, alterar papel e remover membros exige `admin`.
  */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -29,6 +31,7 @@ export const add = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const name = args.name.trim();
     const email = args.email.trim();
     if (!name) throw new Error("Informe o nome.");
@@ -73,6 +76,7 @@ export const updateRole = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const row = await ctx.db
       .query("members")
       .withIndex("by_ref", (q) => q.eq("id", args.id))
@@ -87,6 +91,7 @@ export const remove = mutation({
   args: { id: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const row = await ctx.db
       .query("members")
       .withIndex("by_ref", (q) => q.eq("id", args.id))

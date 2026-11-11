@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../router/AppRouter";
+import { DEMO_ACCOUNT } from "@/shared/auth/localAccounts";
 import { Logo } from "@/shared/components/Logo";
 
 const inputClass =
@@ -45,6 +46,37 @@ export default function AuthPage() {
       });
       if (!result.ok) {
         setError(result.error ?? "Não foi possível concluir o acesso.");
+        return;
+      }
+      navigate(from, { replace: true });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /**
+   * P1 — Conta de teste dos desenvolvedores: entra direto; no modo Convex,
+   * se a conta ainda não existir no banco, cadastra na primeira vez
+   * (fluxo `signUp`) e o seed garante os registros da demonstração.
+   */
+  async function handleDemoLogin() {
+    setError(null);
+    setLoading(true);
+    try {
+      const credentials = {
+        email: DEMO_ACCOUNT.email,
+        password: DEMO_ACCOUNT.password,
+      };
+      let result = await signIn(from, { ...credentials, flow: "signIn" });
+      if (!result.ok) {
+        result = await signIn(from, {
+          ...credentials,
+          name: DEMO_ACCOUNT.name,
+          flow: "signUp",
+        });
+      }
+      if (!result.ok) {
+        setError(result.error ?? "Não foi possível entrar na demonstração.");
         return;
       }
       navigate(from, { replace: true });
@@ -113,11 +145,23 @@ export default function AuthPage() {
                 {loading ? "Entrando..." : mode === "signin" ? "Entrar" : "Criar conta"}
               </button>
             </form>
+
+            <div className="mt-4 border-t border-outline-variant/60 pt-4">
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={loading}
+                className="flex w-full items-center justify-center rounded-sm border border-brand/40 bg-brand/10 px-4 py-2 text-sm font-semibold text-brand-glow transition hover:bg-brand/15 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Entrar com a conta de demonstração
+              </button>
+            </div>
           </div>
 
           <p className="mt-4 rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-center text-xs text-brand-glow">
-            Demonstração: entre com qualquer e-mail e senha — os dados são
-            simulados no navegador (modo protótipo).
+            Conta de teste dos desenvolvedores: {DEMO_ACCOUNT.email} · senha{" "}
+            {DEMO_ACCOUNT.password} — perfil admin, com todos os registros da
+            demonstração. Contas novas entram como leitura (viewer).
           </p>
 
           <p className="mt-6 text-center text-xs text-on-surface-variant/70">

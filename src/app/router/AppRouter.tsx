@@ -9,6 +9,10 @@ import { useConvexAuth, useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { getBackendMode } from "@/shared/backend/config";
+import {
+  authenticate,
+  registerAccount,
+} from "@/shared/auth/localAccounts";
 
 type AuthRole = "admin" | "editor" | "viewer";
 
@@ -72,19 +76,43 @@ function LocalAuthShell({ children }: { children?: ReactNode }) {
 
   const signIn = async (
     next: string,
-    _options?: SignInOptions
+    options?: SignInOptions
   ): Promise<SignInResult> => {
     // Pequena latência simulada para estados de loading.
     await new Promise((r) => setTimeout(r, 300));
-    const authUser: AuthUser = {
-      id: "user-1",
-      name: "Ana Costa",
-      email: "ana@lab.local",
-      role: "admin",
-    };
-    setUser(authUser);
-    setReturnTo({ path: next, from: { pathname: next, search: "", hash: "" } });
-    return { ok: true };
+    try {
+      // P1 — mesmas regras do Convex Auth: credenciais validadas, e-mail
+      // único e papel definido pelo cadastro (novas contas = viewer).
+      const account =
+        options?.flow === "signUp"
+          ? registerAccount({
+              name: options.name ?? "",
+              email: options.email ?? "",
+              password: options.password ?? "",
+            })
+          : (() => {
+              const result = authenticate(
+                options?.email ?? "",
+                options?.password ?? ""
+              );
+              if (!result.ok) throw new Error(result.error);
+              return result.account;
+            })();
+
+      setUser({
+        id: `local-${account.email}`,
+        name: account.name,
+        email: account.email,
+        role: account.role,
+      });
+      setReturnTo({ path: next, from: { pathname: next, search: "", hash: "" } });
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : "Não foi possível concluir o acesso.",
+      };
+    }
   };
 
   const signOut = async () => {

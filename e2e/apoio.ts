@@ -15,8 +15,9 @@ export async function entrar(page: Page, destino = "/app"): Promise<void> {
     page.getByRole("heading", { name: "Acesse sua conta" })
   ).toBeVisible();
 
-  await page.getByPlaceholder("ana@unicap.br").fill("ana@lab.local");
-  await page.getByPlaceholder("••••••••").fill("senha123");
+  // Conta de teste dos desenvolvedores (admin, com todos os registros).
+  await page.getByPlaceholder("ana@unicap.br").fill("ana@unicap.br");
+  await page.getByPlaceholder("••••••••").fill("Senha1234");
   await page.locator('button[type="submit"]').click();
 
   await expect(page).toHaveURL(new RegExp(`${escapeRegExp(destino)}$`), {

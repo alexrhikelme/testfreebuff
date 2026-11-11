@@ -1,6 +1,7 @@
 import { action, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
+import { requireAdmin } from "./permissions";
 
 /**
  * Ponte Convex ↔ Firestore (Firebase).
@@ -85,6 +86,8 @@ export const setSyncEnabled = mutation({
   args: { enabled: v.boolean() },
   returns: v.null(),
   handler: async (ctx, args) => {
+    // P1 — ligar/desligar a réplica externa é decisão de administrador.
+    await requireAdmin(ctx);
     const row = await syncStateRow(ctx);
     if (row) {
       await ctx.db.replace(row._id as Id<"firebaseSyncState">, {

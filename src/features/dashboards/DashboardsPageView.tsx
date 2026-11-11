@@ -27,6 +27,9 @@ export function DashboardsPageView({ projectId }: { projectId?: string } = {}) {
   const [pendingDelete, setPendingDelete] = useState<Dashboard | null>(null);
 
   const editable = canEditDashboard(currentRole);
+  // P1 — excluir dashboard é destrutivo (desvincula notas e remove membros)
+  // e o backend exige admin; a UI espelha a mesma regra.
+  const canDelete = canManageMembers(currentRole);
 
   const notesByDashboard = useMemo(() => {
     const map = new Map<string, Note[]>();
@@ -90,6 +93,7 @@ export function DashboardsPageView({ projectId }: { projectId?: string } = {}) {
                 members={dMembers}
                 open={isOpen}
                 editable={editable}
+                canDelete={canDelete}
                 unlinkedNotes={notes.filter((n) => !n.dashboardId)}
                 onToggle={() => setOpenId(isOpen ? null : d.id)}
                 onEdit={() => setEditing(d)}
@@ -140,6 +144,7 @@ function DashboardCard({
   members,
   open,
   editable,
+  canDelete,
   unlinkedNotes,
   onToggle,
   onEdit,
@@ -152,6 +157,7 @@ function DashboardCard({
   members: ReturnType<typeof useLab>["members"];
   open: boolean;
   editable: boolean;
+  canDelete: boolean;
   unlinkedNotes: Note[];
   onToggle: () => void;
   onEdit: () => void;
@@ -259,13 +265,15 @@ function DashboardCard({
               >
                 Renomear
               </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                className="rounded-md px-2.5 py-1 text-xs font-medium text-on-surface-variant transition hover:bg-error/10 hover:text-error"
-              >
-                Excluir
-              </button>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="rounded-md px-2.5 py-1 text-xs font-medium text-on-surface-variant transition hover:bg-error/10 hover:text-error"
+                >
+                  Excluir
+                </button>
+              )}
             </div>
           )}
         </div>

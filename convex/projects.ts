@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
+import { requireProjectManager, requireRole } from "./permissions";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -33,7 +34,8 @@ async function projectById(ctx: { db: any }, id: string) {
 
 /**
  * Projetos/laboratórios: criação, listagem, atualização e remoção.
- * O criador entra como `owner` automaticamente (permissão máxima).
+ * O criador entra como `owner` automaticamente (permissão máxima) e o
+ * `createdBy` vem da sessão — o cliente não escolhe o dono do projeto.
  */
 export const createProject = mutation({
   args: {
@@ -41,10 +43,11 @@ export const createProject = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     status: v.optional(PROJECT_STATUS),
-    createdBy: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    // P1 — criar projeto exige `editor`; o criador vira `owner` do projeto.
+    const user = await requireRole(ctx, "editor");
     const existing = await projectById(ctx, args.id);
     if (existing) throw new Error("Já existe um projeto com este identificador.");
     if (!args.name.trim()) throw new Error("Informe o nome do projeto.");
@@ -57,12 +60,12 @@ export const createProject = mutation({
       status: args.status ?? "planning",
       createdAt: now,
       updatedAt: now,
-      createdBy: args.createdBy,
+      createdBy: user.email,
     });
     await ctx.db.insert("projectMembers", {
       id: makeId("pmem"),
       projectId: args.id,
-      userId: args.createdBy,
+      userId: user.email,
       role: "owner",
       joinedAt: now,
     });
@@ -160,6 +163,7 @@ export const updateProject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireProjectManager(ctx, args.id);
     const project = await projectById(ctx, args.id);
     if (!project) throw new Error("Projeto não encontrado.");
 
@@ -184,6 +188,7 @@ export const removeProject = mutation({
   args: { id: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireProjectManager(ctx, args.id);
     const project = await projectById(ctx, args.id);
     if (!project) return null;
 
@@ -217,6 +222,7 @@ export const addProjectMember = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireProjectManager(ctx, args.projectId);
     const project = await projectById(ctx, args.projectId);
     if (!project) throw new Error("Projeto não encontrado.");
 
@@ -242,12 +248,20 @@ export const updateProjectMemberRole = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireProjectManager(ctx, args.projectId);
     const membership = await membershipOf(ctx, args.projectId, args.userId);
     if (!membership) throw new Error("Membro não encontrado no projeto.");
 
+    // Projeta só os campos do documento (sem `_id`/`_creationTime`).
     await ctx.db.replace(
       membership._id as Id<"projectMembers">,
-      { ...membership, role: args.role }
+      {
+        id: membership.id,
+        projectId: membership.projectId,
+        userId: membership.userId,
+        role: args.role,
+        joinedAt: membership.joinedAt,
+      }
     );
     return null;
   },
@@ -260,6 +274,7 @@ export const removeProjectMember = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireProjectManager(ctx, args.projectId);
     const membership = await membershipOf(ctx, args.projectId, args.userId);
     if (!membership) return null;
     await ctx.db.delete(membership._id as Id<"projectMembers">);

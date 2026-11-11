@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
+import { requireUser, roleForEmail } from "./permissions";
+import type { AppRole } from "./permissions";
 
 const PROFILE_ROLE = v.union(
   v.literal("admin"),
@@ -37,6 +39,8 @@ function toProfile(row: Doc<"profiles">) {
  * perfil de produto (papel, bio, avatar) usado por projetos e permissões.
  * A criação é idempotente por e-mail: repetir o cadastro devolve o perfil
  * existente em vez de duplicar a conta.
+ * P1 — o papel nunca vem do cliente: sem admin, vale o papel derivado dos
+ * convites (`members`); só admin pode criar perfil de outra pessoa.
  */
 export const createProfile = mutation({
   args: {
@@ -54,9 +58,13 @@ export const createProfile = mutation({
     created: v.boolean(),
   }),
   handler: async (ctx, args) => {
-    const email = args.email.trim().toLowerCase();
+    const user = await requireUser(ctx);
+    const email = args.email.trim().toLowerCase() || user.email;
     if (!email) throw new Error("Informe o e-mail.");
     if (!args.name.trim()) throw new Error("Informe o nome.");
+    if (email !== user.email && user.role !== "admin") {
+      throw new Error("Você só pode criar o seu próprio perfil.");
+    }
 
     const existing = await ctx.db
       .query("profiles")
@@ -75,7 +83,9 @@ export const createProfile = mutation({
 
     const now = nowIso();
     const id = makeId("user");
-    const role = args.role ?? "viewer";
+    const derived: AppRole = await roleForEmail(ctx, email);
+    const role: AppRole =
+      user.role === "admin" && args.role ? args.role : derived;
 
     await ctx.db.insert("profiles", {
       id,
@@ -157,11 +167,18 @@ export const updateProfile = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
     const row = await ctx.db
       .query("profiles")
       .withIndex("by_ref", (q) => q.eq("id", args.id))
       .unique();
     if (!row) throw new Error("Perfil não encontrado.");
+    if (row.email !== user.email && user.role !== "admin") {
+      throw new Error("Você só pode editar o seu próprio perfil.");
+    }
+    if (args.role !== undefined && user.role !== "admin") {
+      throw new Error("Apenas administradores podem alterar papéis.");
+    }
 
     const next: Record<string, unknown> = { ...row, updatedAt: nowIso() };
     if (args.name !== undefined) {

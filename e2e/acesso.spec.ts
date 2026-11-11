@@ -39,7 +39,7 @@ test.describe("Validações do formulário de acesso", () => {
     await expect(page.getByText("Informe o e-mail.")).toBeVisible();
 
     // 2) com e-mail, sem senha.
-    await page.getByPlaceholder("ana@unicap.br").fill("ana@lab.local");
+    await page.getByPlaceholder("ana@unicap.br").fill("ana@unicap.br");
     await submit.click();
     await expect(page.getByText("Informe a senha.")).toBeVisible();
 
@@ -57,12 +57,22 @@ test.describe("Validações do formulário de acesso", () => {
     ).toBeVisible();
   });
 
-  test("mostra a dica de demonstração (dados simulados no navegador)", async ({
-    page,
-  }) => {
+  test("divulga a conta de teste dos desenvolvedores", async ({ page }) => {
     await page.goto("/auth");
     await expect(
-      page.getByText(/entre com qualquer e-mail e senha/)
+      page.getByText(/Conta de teste dos desenvolvedores/)
     ).toBeVisible();
+    await expect(page.getByText(/ana@unicap\.br/)).toBeVisible();
+    await expect(page.getByText(/Senha1234/)).toBeVisible();
+  });
+
+  test("credenciais inválidas mostram erro e não autenticam", async ({ page }) => {
+    await page.goto("/auth");
+    await page.getByPlaceholder("ana@unicap.br").fill("ana@unicap.br");
+    await page.getByPlaceholder("••••••••").fill("senha-errada");
+    await page.locator('button[type="submit"]').click();
+
+    await expect(page.getByText("E-mail ou senha incorretos.")).toBeVisible();
+    await expect(page).toHaveURL(/\/auth$/);
   });
 });

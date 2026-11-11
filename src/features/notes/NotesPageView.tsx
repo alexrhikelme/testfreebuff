@@ -20,7 +20,8 @@ import {
   getDeadlineState,
   validatePeriod,
 } from "./deadline";
-import { useLab } from "@/features/dashboards/store";
+import { canEditDashboard, useLab } from "@/features/dashboards/store";
+import { useOptionalAuth } from "@/app/router/AppRouter";
 import type { Note, NoteStatus } from "./types";
 
 type DeadlineFilter = "all" | "overdue" | "today" | "soon";
@@ -101,6 +102,13 @@ export function NotesPageView({ projectId }: { projectId?: string } = {}) {
     [allNotes, projectId]
   );
   const toast = useToast();
+  /**
+   * P1 — O papel do usuário decide se a tela é editável. Sem sessão
+   * (protótipo/testes) a demonstração continua liberada; com sessão real de
+   * `viewer` a tela entra em modo leitura, espelhando o backend.
+   */
+  const { user } = useOptionalAuth();
+  const canEdit = canEditDashboard(user?.role ?? "admin");
   const [query, setQuery] = useState("");
   /** Tick para recomputar "há X min" e o pulso de alteração recente. */
   const [now, setNow] = useState(() => new Date());
@@ -407,12 +415,15 @@ export function NotesPageView({ projectId }: { projectId?: string } = {}) {
                   </option>
                 ))}
               </select>
-            </label>              <button
+            </label>
+            <button
               type="button"
               onClick={() => openNewNote()}
-              className="inline-flex items-center gap-2 rounded-sm bg-brand px-3.5 py-2 text-sm font-semibold text-on-brand transition hover:bg-brand-strong active:scale-[0.98] focus-ring-brand"
+              disabled={!canEdit}
+              title={canEdit ? undefined : "Seu perfil é somente leitura."}
+              className="inline-flex items-center gap-2 rounded-sm bg-brand px-3.5 py-2 text-sm font-semibold text-on-brand transition hover:bg-brand-strong active:scale-[0.98] focus-ring-brand disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -420,6 +431,16 @@ export function NotesPageView({ projectId }: { projectId?: string } = {}) {
             </button>
           </div>
         </div>
+
+        {!canEdit && (
+          <p
+            role="status"
+            className="mt-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-medium text-amber-300"
+          >
+            Modo leitura (viewer): você pode consultar e filtrar, mas não criar,
+            editar, mover ou excluir anotações.
+          </p>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-outline-variant/25 pt-3">
           <select
@@ -501,12 +522,14 @@ export function NotesPageView({ projectId }: { projectId?: string } = {}) {
           onEdit={openEditNote}
           onDelete={requestDelete}
           onAddNote={openNewNote}
+          readOnly={!canEdit}
         />
       ) : viewMode === "list" ? (
         <NotesListView
           notes={filtered}
           onEdit={openEditNote}
           onDelete={requestDelete}
+          canEdit={canEdit}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -515,6 +538,7 @@ export function NotesPageView({ projectId }: { projectId?: string } = {}) {
               key={note.id}
               note={note}
               now={now}
+              canEdit={canEdit}
               onEdit={() => openEditNote(note)}
               onDelete={() => setPendingDelete(note)}
               onStatusChange={(status) => updateNote(note.id, { status })}
@@ -557,6 +581,7 @@ export function NotesPageView({ projectId }: { projectId?: string } = {}) {
                   // Desfazer devolve a nota para o sprint de onde saiu.
                   sprintId: sprintOf[target.id],
                 });
+
               },
             });
           }}
@@ -610,12 +635,14 @@ function NoteCard({
   onEdit,
   onDelete,
   onStatusChange,
+  canEdit = true,
 }: {
   note: Note;
   now: Date;
   onEdit: () => void;
   onDelete: () => void;
   onStatusChange: (status: NoteStatus) => void;
+  canEdit?: boolean;
 }) {
   const deadlineState = getDeadlineState(note);
   const isOverdue = deadlineState === "overdue";
@@ -634,7 +661,11 @@ function NoteCard({
         <span className="text-[11px] font-semibold tracking-wide text-on-surface-variant">
           {noteCode(note.id)}
         </span>
-        <StatusSelect status={note.status} onChange={onStatusChange} />
+        <StatusSelect
+          status={note.status}
+          disabled={!canEdit}
+          onChange={onStatusChange}
+        />
       </div>
 
       <h3 className="mt-1 font-display text-base font-semibold text-on-surface">
@@ -683,22 +714,24 @@ function NoteCard({
             ? `Editada por ${note.updatedBy} · ${formatRelativeTime(note.updatedAt, now)}`
             : `Atualizada ${formatRelativeTime(note.updatedAt, now)}`}
         </span>
-        <span className="flex shrink-0 gap-1">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="rounded px-1.5 py-0.5 text-xs font-medium text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
-          >
-            Editar
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="rounded px-1.5 py-0.5 text-xs font-medium text-on-surface-variant transition hover:bg-error/10 hover:text-error"
-          >
-            Excluir
-          </button>
-        </span>
+        {canEdit && (
+          <span className="flex shrink-0 gap-1">
+            <button
+              type="button"
+              onClick={onEdit}
+              className="rounded px-1.5 py-0.5 text-xs font-medium text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
+            >
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="rounded px-1.5 py-0.5 text-xs font-medium text-on-surface-variant transition hover:bg-error/10 hover:text-error"
+            >
+              Excluir
+            </button>
+          </span>
+        )}
       </div>
     </article>
   );
