@@ -163,7 +163,9 @@ describe("Minhas Anotações (janela)", () => {
   function renderDocs() {
     return render(
       <ToastProvider>
-        <DocumentsPageView />
+        <TrashProvider>
+          <DocumentsPageView />
+        </TrashProvider>
       </ToastProvider>
     );
   }

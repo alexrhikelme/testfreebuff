@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SEED_DOCS, type WorkspaceDoc } from "./data";
+import { type WorkspaceDoc } from "./data";
 import { importFile } from "./import";
 import { useOptionalAuth } from "@/app/router/AppRouter";
 import { canEditDashboard } from "@/features/dashboards/store";
 import { useToast } from "@/shared/components/Toast";
+import { ConfirmDialog } from "@/shared/components/ConfirmDialog";
+import { useTrash } from "@/features/trash";
+import {
+  readDocsState,
+  restoreDocToStorage,
+  writeDocsState,
+  type DocsState,
+} from "./storage";
 import { RichTextEditor, RichContentView } from "@/features/notes/RichText";
 import {
   buildMarkdown,
@@ -12,56 +20,6 @@ import {
   downloadFile,
   exportFilename,
 } from "./export";
-
-const DOCS_STORAGE_KEY = "labnotes-docs-v1";
-
-type DocsState = {
-  docs: WorkspaceDoc[];
-  checked: Record<string, boolean>;
-  selectedId: string;
-};
-
-/**
- * Persistência da janela: documentos, checklists e seleção sobrevivem à troca
- * de janela/rota e ao recarregamento. Sem storage, cai nos dados de exemplo.
- */
-function loadDocsState(): DocsState {
-  const fallback: DocsState = {
-    docs: SEED_DOCS,
-    checked: {},
-    selectedId: SEED_DOCS[0].id,
-  };
-  try {
-    const raw = window.localStorage.getItem(DOCS_STORAGE_KEY);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as Partial<DocsState>;
-    const docs = Array.isArray(parsed.docs) ? parsed.docs : SEED_DOCS;
-    if (docs.length === 0) return fallback;
-    const selectedId =
-      typeof parsed.selectedId === "string" &&
-      docs.some((d) => d.id === parsed.selectedId)
-        ? parsed.selectedId
-        : docs[0].id;
-    return {
-      docs,
-      checked:
-        parsed.checked && typeof parsed.checked === "object"
-          ? parsed.checked
-          : {},
-      selectedId,
-    };
-  } catch {
-    return fallback;
-  }
-}
-
-function persistDocsState(state: DocsState): void {
-  try {
-    window.localStorage.setItem(DOCS_STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Storage indisponível: a janela continua funcionando em memória.
-  }
-}
 
 /**
  * Sprint 13 — Minhas Anotações redesignado ao mockup:
@@ -74,7 +32,8 @@ export function DocumentsPageView() {
   /** P1 — `viewer` consulta documentos, mas não cria novos. */
   const canEdit = canEditDashboard(user?.role ?? "admin");
   const { showToast } = useToast();
-  const [initialState] = useState(loadDocsState);
+  const { addItem: addTrashItem } = useTrash();
+  const [initialState] = useState<DocsState>(readDocsState);
   const [docs, setDocs] = useState<WorkspaceDoc[]>(initialState.docs);
   const [selectedId, setSelectedId] = useState(initialState.selectedId);
   const [query, setQuery] = useState("");
@@ -86,6 +45,8 @@ export function DocumentsPageView() {
   const [draft, setDraft] = useState("");
   /** Pente fino (item 10): menu de exportação md/doc/pdf. */
   const [exportOpen, setExportOpen] = useState(false);
+  /** Anotação aguardando confirmação de exclusão. */
+  const [pendingDelete, setPendingDelete] = useState<WorkspaceDoc | null>(null);
   /** Importação: seletor de arquivo + arrastar e soltar sobre a página. */
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [draggingFile, setDraggingFile] = useState(false);
@@ -100,8 +61,7 @@ export function DocumentsPageView() {
   // Toda mudança (criar, importar, editar texto/título, checklist, seleção)
   // é gravada na hora, então voltar para esta janela mantém o conteúdo.
   useEffect(() => {
-    if (!selected) return;
-    persistDocsState({ docs, checked, selectedId: selected.id });
+    writeDocsState({ docs, checked, selectedId: selected?.id ?? "" });
   }, [docs, checked, selected]);
 
   const toggleCheck = (docId: string, index: number) => {
@@ -205,6 +165,26 @@ export function DocumentsPageView() {
   const cancelEditSection = () => {
     setEditingIndex(null);
     setDraft("");
+  };
+
+  /**
+   * Exclusão de anotação: sai de "Minhas Anotações", libera o espaço na lista
+   * e vai para a Lixeira, de onde ainda pode ser excluída definitivamente.
+   */
+  const deleteDoc = (doc: WorkspaceDoc) => {
+    const position = docs.findIndex((d) => d.id === doc.id);
+    const remaining = docs.filter((d) => d.id !== doc.id);
+    setDocs(remaining);
+    setEditingIndex(null);
+    setExportOpen(false);
+    if (doc.id === selectedId) setSelectedId(remaining[0]?.id ?? "");
+    addTrashItem({
+      title: doc.title,
+      kind: "documento",
+      // Restaurar na Lixeira devolve a anotação para a lista, na posição original.
+      onRestore: () => restoreDocToStorage(doc, position),
+    });
+    showToast("success", `“${doc.title}” movida para a Lixeira.`);
   };
 
   /**
@@ -382,7 +362,9 @@ export function DocumentsPageView() {
           </div>
           {visible.length === 0 ? (
             <p className="rounded-sm border border-outline-variant/30 bg-surface-container-lowest px-3 py-4 text-sm text-on-surface-variant">
-              Nenhum documento encontrado.
+              {docs.length === 0
+                ? "Nenhuma anotação. Crie uma nova ou importe um arquivo."
+                : "Nenhum documento encontrado."}
             </p>
           ) : (
             <ul className="flex flex-col gap-1.5">
@@ -516,17 +498,20 @@ export function DocumentsPageView() {
                   </svg>
                   Compartilhar
                 </button>
-                <button
-                  type="button"
-                  aria-label="Excluir documento"
-                  title="Excluir documento"
-                  className="rounded-md px-2 py-2 text-on-surface-variant transition hover:bg-error/10 hover:text-error"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
-                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setPendingDelete(selected)}
+                    aria-label="Excluir documento"
+                    title="Excluir documento"
+                    className="rounded-md px-2 py-2 text-on-surface-variant transition hover:bg-error/10 hover:text-error"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -698,6 +683,19 @@ export function DocumentsPageView() {
           </div>
         )}
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Excluir anotação?"
+          description={`“${pendingDelete.title}” será movida para a Lixeira e sairá de Minhas Anotações. Você pode excluí-la definitivamente por lá.`}
+          confirmLabel="Mover para a Lixeira"
+          onConfirm={() => {
+            deleteDoc(pendingDelete);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }

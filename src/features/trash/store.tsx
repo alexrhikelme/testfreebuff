@@ -16,6 +16,11 @@ export type TrashItem = {
   kind: TrashKind;
   /** Momento da exclusão (ISO) — usado no rótulo "há X dias"/"em D de Mês". */
   deletedAt: string;
+  /**
+   * Como devolver o item de onde ele saiu (ex.: reinserir a anotação em
+   * "Minhas Anotações"). Itens de exemplo não têm origem e ficam sem ação.
+   */
+  onRestore?: () => void;
 };
 
 function daysAgo(days: number): string {
@@ -35,7 +40,7 @@ const seedItems: TrashItem[] = [
 
 type TrashContextValue = {
   items: TrashItem[];
-  /** Restaura o item (remove da lixeira). */
+  /** Restaura o item: devolve à origem (quando houver) e sai da lixeira. */
   restore: (id: string) => void;
   /** Exclusão definitiva de um item. */
   remove: (id: string) => void;
@@ -43,8 +48,12 @@ type TrashContextValue = {
   empty: () => void;
   /** Sprint 13: restaura todos os itens de uma vez. */
   restoreAll: () => void;
-  /** Envia um item para a lixeira (integração futura com exclusões reais). */
-  addItem: (input: { title: string; kind: TrashKind }) => TrashItem;
+  /** Envia para a lixeira um item excluído no sistema. */
+  addItem: (input: {
+    title: string;
+    kind: TrashKind;
+    onRestore?: () => void;
+  }) => TrashItem;
 };
 
 const TrashContext = createContext<TrashContextValue | null>(null);
@@ -52,23 +61,36 @@ const TrashContext = createContext<TrashContextValue | null>(null);
 export function TrashProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<TrashItem[]>(seedItems);
 
-  const restore = useCallback((id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  }, []);
+  const restore = useCallback(
+    (id: string) => {
+      items.find((i) => i.id === id)?.onRestore?.();
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    },
+    [items]
+  );
 
   const remove = useCallback((id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
   const empty = useCallback(() => setItems([]), []);
-  const restoreAll = useCallback(() => setItems([]), []);
+  /** Restaurar Todos também devolve cada item à origem. */
+  const restoreAll = useCallback(() => {
+    for (const item of items) item.onRestore?.();
+    setItems([]);
+  }, [items]);
 
-  const addItem = useCallback((input: { title: string; kind: TrashKind }) => {
+  const addItem = useCallback((input: {
+    title: string;
+    kind: TrashKind;
+    onRestore?: () => void;
+  }) => {
     const item: TrashItem = {
       id: makeId("trash"),
       title: input.title,
       kind: input.kind,
       deletedAt: nowIso(),
+      onRestore: input.onRestore,
     };
     setItems((prev) => [item, ...prev]);
     return item;

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "../shared/components/Toast";
+import { TrashProvider } from "../features/trash";
 import { DocumentsPageView } from "../features/documents";
 import {
   buildDocFromText,
@@ -130,7 +131,9 @@ describe("Tela Minhas Anotações — importar arquivo", () => {
     render(
       <MemoryRouter>
         <ToastProvider>
-          <DocumentsPageView />
+          <TrashProvider>
+            <DocumentsPageView />
+          </TrashProvider>
         </ToastProvider>
       </MemoryRouter>
     );
@@ -157,7 +160,9 @@ describe("Tela Minhas Anotações — importar arquivo", () => {
     render(
       <MemoryRouter>
         <ToastProvider>
-          <DocumentsPageView />
+          <TrashProvider>
+            <DocumentsPageView />
+          </TrashProvider>
         </ToastProvider>
       </MemoryRouter>
     );

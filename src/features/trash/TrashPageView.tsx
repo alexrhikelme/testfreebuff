@@ -170,7 +170,16 @@ export function TrashPageView() {
                   type="button"
                   onClick={() => {
                     restore(item.id);
-                    showToast("success", `“${item.title}” restaurado.`);
+                    showToast(
+                      "success",
+                      item.onRestore
+                        ? `“${item.title}” devolvida para ${
+                            item.kind === "documento"
+                              ? "Minhas Anotações"
+                              : "os projetos ativos"
+                          }.`
+                        : `“${item.title}” restaurado.`
+                    );
                   }}
                   className="inline-flex items-center gap-2 rounded-md bg-surface-container px-3 py-1.5 text-sm font-medium text-on-surface ring-1 ring-outline-variant/50 transition hover:bg-surface-container-high"
                 >

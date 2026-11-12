@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "../shared/components/Toast";
+import { TrashProvider } from "../features/trash";
 import { NotesProvider, useNotes, NotesBoardView } from "../features/notes";
 import { LabProvider } from "../features/dashboards";
 import { NotificationsBell } from "../features/notes/NotificationsBell";
@@ -135,7 +136,9 @@ describe("Minhas Anotações — edição rica e exportação (itens 3 e 10)", (
     render(
       <MemoryRouter>
         <ToastProvider>
-          <DocumentsPageView />
+          <TrashProvider>
+            <DocumentsPageView />
+          </TrashProvider>
         </ToastProvider>
       </MemoryRouter>
     );
@@ -163,7 +166,9 @@ describe("Minhas Anotações — edição rica e exportação (itens 3 e 10)", (
     render(
       <MemoryRouter>
         <ToastProvider>
-          <DocumentsPageView />
+          <TrashProvider>
+            <DocumentsPageView />
+          </TrashProvider>
         </ToastProvider>
       </MemoryRouter>
     );

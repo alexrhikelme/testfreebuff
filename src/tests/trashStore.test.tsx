@@ -89,6 +89,49 @@ describe("TrashProvider (store da lixeira)", () => {
     expect(Number.isNaN(Date.parse(added.deletedAt))).toBe(false);
   });
 
+  it("restore devolve o item à origem e restoreAll devolve todos", () => {
+    const { result } = renderHook(() => useTrash(), { wrapper });
+    const first = vi.fn();
+    const second = vi.fn();
+
+    act(() => {
+      result.current.addItem({
+        title: "Anotação A",
+        kind: "documento",
+        onRestore: first,
+      });
+      result.current.addItem({
+        title: "Anotação B",
+        kind: "documento",
+        onRestore: second,
+      });
+    });
+
+    // Exclusão definitiva não devolve nada para a origem.
+    act(() => {
+      result.current.remove(result.current.items[0].id);
+    });
+    expect(second).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.restore(result.current.items[0].id);
+    });
+    expect(first).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.addItem({
+        title: "Anotação C",
+        kind: "documento",
+        onRestore: second,
+      });
+    });
+    act(() => {
+      result.current.restoreAll();
+    });
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(result.current.items).toHaveLength(0);
+  });
+
   it("useTrash fora do provider lança erro claro", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => renderHook(() => useTrash())).toThrow(
