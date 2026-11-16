@@ -50,6 +50,8 @@ describe("LabProvider (modo local)", () => {
     expect(created.name).toBe("Novo Projeto");
     expect(created.createdAt).toBe(created.updatedAt);
     expect(Number.isNaN(Date.parse(created.createdAt))).toBe(false);
+    expect(created.createdAt.length).toBeGreaterThan(0);
+    expect(created.createdAt.charAt(0)).toBe("2");
   });
 
   it("createDashboard usa descrição vazia por padrão", () => {

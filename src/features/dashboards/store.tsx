@@ -110,7 +110,8 @@ const LabContext = createContext<LabContextValue | null>(null);
  * - "local": estado em memória (protótipo e testes), comportamento intacto.
  */
 export function LabProvider({ children }: { children: ReactNode }) {
-  const isConvex = getBackendMode() === "convex";
+  // Firebase e Convex usam a mesma API de hooks; só o modo local é memória.
+  const isRemote = getBackendMode() !== "local";
   const convexDashboards = useConvexDashboards();
   const convexMembers = useConvexMembers();
   const convexMutations = useConvexDashboardMutations();
@@ -120,13 +121,13 @@ export function LabProvider({ children }: { children: ReactNode }) {
     useState<Dashboard[]>(seedDashboards);
   const [localMembers, setLocalMembers] = useState<Member[]>(seedMembers);
 
-  const dashboards = isConvex ? convexDashboards : localDashboards;
-  const members = isConvex ? convexMembers : localMembers;
+  const dashboards = isRemote ? convexDashboards : localDashboards;
+  const members = isRemote ? convexMembers : localMembers;
   // Sprint 9 (D3): papel real do usuário autenticado, derivado da tabela
   // de membros pelo servidor (users:me). No modo local (protótipo), o
   // usuário simulado continua admin para não regredir a demonstração.
   const { user } = useOptionalAuth();
-  const currentRole: MemberRole = user?.role ?? (isConvex ? "viewer" : "admin");
+  const currentRole: MemberRole = user?.role ?? (isRemote ? "viewer" : "admin");
 
   const createDashboard = useCallback(
     (input: NewDashboardInput): Dashboard => {
@@ -138,7 +139,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
         createdAt: nowIso(),
         updatedAt: nowIso(),
       };
-      if (isConvex) {
+      if (isRemote) {
         void convexMutations
           .createDashboard(input, id)
           .then(() => toast.showToast("success", "Dashboard criado."))
@@ -153,12 +154,12 @@ export function LabProvider({ children }: { children: ReactNode }) {
       setLocalDashboards((prev) => [dashboard, ...prev]);
       return dashboard;
     },
-    [isConvex, convexMutations]
+    [isRemote, convexMutations]
   );
 
   const updateDashboard = useCallback(
     (id: string, patch: Partial<NewDashboardInput>) => {
-      if (isConvex) {
+      if (isRemote) {
         void convexMutations
           .updateDashboard(id, patch)
           .catch((e: unknown) => {
@@ -175,12 +176,12 @@ export function LabProvider({ children }: { children: ReactNode }) {
         )
       );
     },
-    [isConvex, convexMutations]
+    [isRemote, convexMutations]
   );
 
   const deleteDashboard = useCallback(
     (id: string) => {
-      if (isConvex) {
+      if (isRemote) {
         void convexMutations
           .deleteDashboard(id)
           .then(() => toast.showToast("success", "Dashboard excluído (notas preservadas)."))
@@ -197,7 +198,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
       // membros do dashboard são removidos (o servidor faz isso atomicamente).
       setLocalMembers((prev) => prev.filter((m) => m.dashboardId !== id));
     },
-    [isConvex, convexMutations]
+    [isRemote, convexMutations]
   );
 
   const addMember = useCallback(
@@ -211,7 +212,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
         dashboardId: input.dashboardId,
         invitedAt: nowIso(),
       };
-      if (isConvex) {
+      if (isRemote) {
         void convexMutations
           .addMember(input, id)
           .then(() => toast.showToast("success", `Convite enviado a ${input.email}.`))
@@ -226,12 +227,12 @@ export function LabProvider({ children }: { children: ReactNode }) {
       setLocalMembers((prev) => [member, ...prev]);
       return member;
     },
-    [isConvex, convexMutations]
+    [isRemote, convexMutations]
   );
 
   const updateMemberRole = useCallback(
     (id: string, role: MemberRole) => {
-      if (isConvex) {
+      if (isRemote) {
         void convexMutations
           .updateMemberRole(id, role)
           .catch((e: unknown) => {
@@ -246,12 +247,12 @@ export function LabProvider({ children }: { children: ReactNode }) {
         prev.map((m) => (m.id === id ? { ...m, role } : m))
       );
     },
-    [isConvex, convexMutations]
+    [isRemote, convexMutations]
   );
 
   const removeMember = useCallback(
     (id: string) => {
-      if (isConvex) {
+      if (isRemote) {
         void convexMutations
           .removeMember(id)
           .then(() => toast.showToast("success", "Membro removido."))
@@ -265,7 +266,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
       }
       setLocalMembers((prev) => prev.filter((m) => m.id !== id));
     },
-    [isConvex, convexMutations]
+    [isRemote, convexMutations]
   );
 
   const value: LabContextValue = {

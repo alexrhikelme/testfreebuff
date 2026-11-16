@@ -7,6 +7,8 @@ import {
   useNoteMutations as useConvexNoteMutations,
   useNotesOrderQuery as useConvexNotesOrder,
   useNotesLoading as useConvexNotesLoading,
+  useSprintsQuery as useRemoteSprints,
+  useSprintMutations as useConvexSprintMutations,
 } from "@/shared/backend/hooks";
 import { useOptionalToast } from "@/shared/components/Toast";
 import { getBackendMode, CURRENT_USER, MAX_ACTIVITY, makeId, nowIso } from "@/shared/backend/config";
@@ -153,7 +155,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const convexOrder = useConvexNotesOrder();
   const convexMutations = useConvexNoteMutations();
   const convexLoading = useConvexNotesLoading();
-  const isConvex = mode === "convex";
+  const remoteSprints = useRemoteSprints();
+  const sprintMutations = useConvexSprintMutations();
+  // Os dois backends reais (Firebase e Convex) usam a mesma API de hooks;
+  // só o modo local fica no estado em memória.
+  const isRemote = mode !== "local";
   const toast = useOptionalToast();
 
   const [localNotes, setLocalNotes] = useState<Note[]>(seedNotes);
@@ -172,10 +178,18 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const notes = isConvex ? convexNotes : localNotes;
-  const activity = isConvex ? convexActivity : localActivity;
-  const order = isConvex ? convexOrder : localOrder;
-  const isLoading = isConvex ? convexLoading : false;
+  const notes = isRemote ? convexNotes : localNotes;
+  const activity = isRemote ? convexActivity : localActivity;
+  const order = isRemote ? convexOrder : localOrder;
+  const isLoading = isRemote ? convexLoading : false;
+  // Sprints: no backend as colunas vêm da coleção `sprints` e o vínculo mora
+  // no campo `sprint_id` da nota; no modo local tudo fica no navegador.
+  const sprints = isRemote ? remoteSprints : sprintState.columns;
+  const sprintOf: Record<string, string> = isRemote
+    ? Object.fromEntries(
+        notes.flatMap((n) => (n.sprintId ? [[n.id, n.sprintId] as const] : [])),
+      )
+    : sprintState.membership;
   // Sprint 9 (D3): autoria exibida otimisticamente com o nome da sessão;
   // o servidor confirma com o nome resolvido da conta autenticada.
   const { user } = useOptionalAuth();
@@ -190,6 +204,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   /** Vincula (ou desvincula) uma nota a um sprint do quadro. */
   const setNoteSprint = useCallback(
     (noteId: string, sprintId: string | null) => {
+      if (isRemote) {
+        void sprintMutations.setNoteSprint(noteId, sprintId).catch((e: unknown) => {
+          toast.showToast(
+            "error",
+            e instanceof Error ? e.message : "Erro ao mover a nota de sprint."
+          );
+        });
+        return;
+      }
       setSprintState((prev) => {
         const current = prev.membership[noteId];
         if (current === sprintId || (sprintId === null && !current)) return prev;
@@ -201,7 +224,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return next;
       });
     },
-    []
+    [isRemote, sprintMutations, toast]
   );
 
   const addSprint = useCallback(
@@ -210,21 +233,39 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         id: makeId("sprint"),
         title:
           title?.trim() ||
-          `Sprint ${BASE_COLUMN_COUNT + sprintState.columns.length + 1}`,
+          `Sprint ${BASE_COLUMN_COUNT + sprints.length + 1}`,
       };
+      if (isRemote) {
+        void sprintMutations.addSprint(column).catch((e: unknown) => {
+          toast.showToast(
+            "error",
+            e instanceof Error ? e.message : "Erro ao criar sprint."
+          );
+        });
+        return column;
+      }
       commitSprints({
         ...sprintState,
         columns: [...sprintState.columns, column],
       });
       return column;
     },
-    [sprintState, commitSprints]
+    [isRemote, sprintMutations, sprints.length, sprintState, commitSprints, toast]
   );
 
   const renameSprint = useCallback(
     (id: string, title: string) => {
       const value = title.trim();
       if (!value) return;
+      if (isRemote) {
+        void sprintMutations.renameSprint(id, value).catch((e: unknown) => {
+          toast.showToast(
+            "error",
+            e instanceof Error ? e.message : "Erro ao renomear sprint."
+          );
+        });
+        return;
+      }
       commitSprints({
         ...sprintState,
         columns: sprintState.columns.map((c) =>
@@ -232,11 +273,20 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         ),
       });
     },
-    [sprintState, commitSprints]
+    [isRemote, sprintMutations, sprintState, commitSprints, toast]
   );
 
   const removeSprint = useCallback(
     (id: string) => {
+      if (isRemote) {
+        void sprintMutations.removeSprint(id).catch((e: unknown) => {
+          toast.showToast(
+            "error",
+            e instanceof Error ? e.message : "Erro ao excluir sprint."
+          );
+        });
+        return;
+      }
       const membership: Record<string, string> = {};
       for (const [noteId, sprintId] of Object.entries(sprintState.membership)) {
         if (sprintId !== id) membership[noteId] = sprintId;
@@ -246,12 +296,12 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         membership,
       });
     },
-    [sprintState, commitSprints]
+    [isRemote, sprintMutations, sprintState, commitSprints, toast]
   );
 
   const createNote = useCallback(
     (input: NewNoteInput): Note => {
-      if (isConvex) {
+      if (isRemote) {
         const id = makeId("note");
         const optimistic: Note = {
           id,
@@ -266,7 +316,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           createdAt: nowIso(),
           updatedAt: nowIso(),
           updatedBy: actor,
+          sprintId: input.sprintId,
         };
+        // O sprint vai junto com a nota: é o campo `sprint_id` do documento.
         void convexMutations
           .createNote(input, id)
           .then(() => toast.showToast("success", "Anotação criada."))
@@ -276,8 +328,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
               e instanceof Error ? e.message : "Erro ao criar anotação."
             );
           });
-        // Sprint nasce junto com a nota (vínculo é estado do quadro).
-        if (input.sprintId) setNoteSprint(optimistic.id, input.sprintId);
         return optimistic;
       }
 
@@ -305,7 +355,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
       return note;
     },
-    [isConvex, convexMutations, pushActivity, actor, setNoteSprint]
+    [isRemote, convexMutations, pushActivity, actor, setNoteSprint]
   );
 
   const updateNote = useCallback(
@@ -313,7 +363,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       // `sprintId` é vínculo do quadro: nunca vai para o servidor.
       const { sprintId, ...serverPatch } = patch;
       if (sprintId !== undefined) setNoteSprint(id, sprintId ?? null);
-      if (isConvex) {
+      if (isRemote) {
         void convexMutations
           .updateNote(id, serverPatch)
           .catch((e: unknown) => {
@@ -349,14 +399,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         );
       });
     },
-    [isConvex, convexMutations, pushActivity, actor, setNoteSprint]
+    [isRemote, convexMutations, pushActivity, actor, setNoteSprint]
   );
 
   const deleteNote = useCallback(
     (id: string) => {
-      // O vínculo com sprint mora no quadro: limpa nos dois modos.
-      setNoteSprint(id, null);
-      if (isConvex) {
+      // No modo local o vínculo com sprint mora no quadro: limpa junto.
+      // No backend ele é campo da própria nota, que será removida.
+      if (!isRemote) setNoteSprint(id, null);
+      if (isRemote) {
         void convexMutations
           .deleteNote(id)
           .then(() => toast.showToast("success", "Anotação excluída."))
@@ -384,7 +435,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return prev.filter((n) => n.id !== id);
       });
     },
-    [isConvex, convexMutations, pushActivity, actor]
+    [isRemote, convexMutations, pushActivity, actor]
   );
 
   const moveNote = useCallback(
@@ -398,7 +449,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       if (sprintId !== undefined) setNoteSprint(id, sprintId);
       // Recalcula a posição no cliente (mesma semântica da Sprint 5) e
       // envia ao servidor junto com o novo status (Sprint 8).
-      const current = isConvex ? convexOrder : localOrder;
+      const current = isRemote ? convexOrder : localOrder;
       const next = { ...current };
       delete next[id];
       let newPosition: number;
@@ -418,7 +469,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         next[id] = newPosition;
       }
 
-      if (isConvex) {
+      if (isRemote) {
         void convexMutations
           .moveNote(id, status, newPosition)
           .catch((e: unknown) => {
@@ -450,15 +501,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         );
       });
     },
-    [isConvex, convexOrder, localOrder, convexMutations, pushActivity, actor, setNoteSprint]
+    [isRemote, convexOrder, localOrder, convexMutations, pushActivity, actor, setNoteSprint]
   );
 
   const value: NotesContextValue = {
     notes,
     order,
     activity,
-    sprints: sprintState.columns,
-    sprintOf: sprintState.membership,
+    sprints,
+    sprintOf,
     addSprint,
     renameSprint,
     removeSprint,

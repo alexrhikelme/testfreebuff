@@ -1,0 +1,159 @@
+rules_version = '2';
+
+/**
+ * Regras do Firestore — Lab Notes Dashboards (projeto combogo-unicap).
+ *
+ * Espelham o que o backend Convex aplicava:
+ * - leitura: qualquer usuário autenticado;
+ * - escrita de conteúdo (notas, sprints, dashboards): editor ou admin;
+ * - exclusão de dashboard e gestão de membros: apenas admin;
+ * - atividade é escrita pelo app e não é editável/removível;
+ * - todo o resto é negado.
+ *
+ * Papel do usuário (opcional): documento `users/{uid}` com `{ role:
+ * "admin" | "editor" | "viewer" }`. Enquanto esse documento não existir, o
+ * usuário autenticado opera como `admin` — que é o comportamento atual do
+ * app (o AuthShell ainda não deriva papel do banco). Para restringir alguém,
+ * basta criar/editar o documento `users/{uid}` no console.
+ *
+ * Campos usados pelo app:
+ *   notes:      id, title, content, status, tags, assignee, start_date,
+ *               due_date, dashboard_id, sprint_id, created_at, updated_at,
+ *               updated_by, order
+ *   dashboards: id, name, description, created_at, updated_at
+ *   members:    id, name, email, role, dashboard_id, invited_at
+ *   sprints:    id, title, created_at
+ *   activity:   note_id, note_title, action, actor, at
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- base
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : 'admin';
+    }
+
+    function canRead() {
+      return signedIn();
+    }
+
+    /** Editor ou admin: escreve conteúdo (notas, sprints, dashboards). */
+    function canWrite() {
+      return signedIn() && role() in ['admin', 'editor'];
+    }
+
+    /** Admin: exclui dashboards e gerencia membros. */
+    function isAdmin() {
+      return signedIn() && role() == 'admin';
+    }
+
+    function noteStatus() {
+      return ['not_started', 'in_progress', 'completed', 'blocked'];
+    }
+
+    function memberRoles() {
+      return ['admin', 'editor', 'viewer'];
+    }
+
+    function activityActions() {
+      return ['created', 'updated', 'status_changed', 'moved', 'deleted'];
+    }
+
+    // --------------------------------------------------------------- notas
+    match /notes/{noteId} {
+      allow read: if canRead();
+
+      allow create: if canWrite()
+        && request.resource.data.keys().hasAll([
+             'title', 'status', 'tags', 'created_at', 'updated_at'
+           ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.status in noteStatus()
+        && request.resource.data.tags is list;
+
+      allow update: if canWrite()
+        && request.resource.data.title is string
+        && request.resource.data.status in noteStatus()
+        && request.resource.data.tags is list;
+
+      allow delete: if canWrite();
+    }
+
+    // ---------------------------------------------------------- dashboards
+    match /dashboards/{dashboardId} {
+      allow read: if canRead();
+
+      allow create: if canWrite()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+
+      allow update: if canWrite()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------- membros
+    match /members/{memberId} {
+      allow read: if canRead();
+
+      allow create, update: if isAdmin()
+        && request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.role in memberRoles()
+        && request.resource.data.dashboard_id is string;
+
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------- sprints
+    match /sprints/{sprintId} {
+      allow read: if canRead();
+
+      allow create, update: if canWrite()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0;
+
+      allow delete: if canWrite();
+    }
+
+    // ------------------------------------------------------------ atividade
+    match /activity/{activityId} {
+      allow read: if canRead();
+
+      allow create: if canWrite()
+        && request.resource.data.note_id is string
+        && request.resource.data.action in activityActions();
+
+      // Histórico é imutável (nem editor nem admin reescrevem atividade).
+      allow update, delete: if false;
+    }
+
+    // ------------------------------------------------------ perfil / papel
+    // O usuário lê o próprio perfil; só admin define papéis (evita que um
+    // viewer se promova a admin escrevendo no próprio documento).
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      allow create, update: if isAdmin()
+        && (!('role' in request.resource.data)
+            || request.resource.data.role in memberRoles());
+
+      allow delete: if isAdmin();
+    }
+
+    // Qualquer outra coleção é negada.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -7,8 +7,10 @@ export type NoteStatus =
 /**
  * Sprints do quadro (montagem de sprints) — coluna criada pelo usuário
  * ALÉM das 4 colunas base, que continuam sendo os status da nota.
- * O vínculo nota → sprint mora no store (sprintOf) e é persistido no
- * localStorage, junto com os títulos já existentes das colunas base.
+ * No backend, as colunas ficam na coleção `sprints` (Firestore) e o vínculo
+ * nota → sprint é o campo `sprint_id` da própria nota, então ambos aparecem
+ * para todos os usuários. No modo local (protótipo/testes) o estado continua
+ * no localStorage.
  */
 export type SprintColumn = {
   id: string;
@@ -35,6 +37,8 @@ export type Note = {
   updatedBy?: string;
   /** Sprint 8: posição manual no Kanban (persistida no servidor). */
   order?: number;
+  /** Sprint do quadro ao qual a nota pertence (persistido no backend). */
+  sprintId?: string;
 };
 
 /** Sprint 6: registro de atividade recente no workspace. */
