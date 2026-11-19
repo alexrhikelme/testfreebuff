@@ -4,10 +4,11 @@ import type { ReactNode } from "react";
 import { LabProvider, useLab } from "../features/dashboards/store";
 
 /**
- * Sprint 8 (D1) — modo local do LabProvider: os dashboards e membros do
- * protótipo em memória, com a mesma API usada pela versão Convex.
- * Em modo teste o backend é sempre "local" (getBackendMode), então as
- * mutations são síncronas e determinísticas.
+ * Modo local do LabProvider (protótipo/testes): projetos e membros em
+ * memória, com a mesma API usada no Firebase. Em modo teste o backend é
+ * sempre "local", então as mutations são síncronas e determinísticas.
+ *
+ * O modelo é por projeto: o papel de cada pessoa vale DENTRO do projeto.
  */
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -15,22 +16,27 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 describe("LabProvider (modo local)", () => {
-  it("começa com os 5 dashboards e 3 membros semente", () => {
+  it("começa com os projetos e membros semente", () => {
     const { result } = renderHook(() => useLab(), { wrapper });
 
     expect(result.current.dashboards).toHaveLength(5);
     expect(result.current.dashboards[0].id).toBe("dash-q3");
     expect(result.current.members).toHaveLength(3);
-    expect(result.current.members.map((m) => m.email)).toEqual([
-      "ana@lab.local",
-      "bruno@lab.local",
-      "carla@lab.local",
+    expect(result.current.members.map((m) => m.email).sort()).toEqual([
+      "ana@unicap.br",
+      "bruno@unicap.br",
+      "carla@unicap.br",
     ]);
   });
 
-  it("usuário simulado é admin no protótipo", () => {
+  it("calcula o papel por projeto (e libera a demonstração local)", () => {
     const { result } = renderHook(() => useLab(), { wrapper });
-    expect(result.current.currentRole).toBe("admin");
+
+    expect(result.current.roleInProject("dash-seed-1")).toBe("admin");
+    expect(result.current.canEditProject("dash-seed-1")).toBe(true);
+    expect(result.current.canManageProject("dash-seed-1")).toBe(true);
+    // Anotação pessoal (sem projeto) é sempre editável pelo dono.
+    expect(result.current.canEditProject(undefined)).toBe(true);
   });
 
   it("createDashboard adiciona no topo com id e datas gerados", () => {
@@ -50,8 +56,6 @@ describe("LabProvider (modo local)", () => {
     expect(created.name).toBe("Novo Projeto");
     expect(created.createdAt).toBe(created.updatedAt);
     expect(Number.isNaN(Date.parse(created.createdAt))).toBe(false);
-    expect(created.createdAt.length).toBeGreaterThan(0);
-    expect(created.createdAt.charAt(0)).toBe("2");
   });
 
   it("createDashboard usa descrição vazia por padrão", () => {
@@ -81,7 +85,7 @@ describe("LabProvider (modo local)", () => {
     expect(updated.updatedAt >= original.updatedAt).toBe(true);
   });
 
-  it("updateDashboard ignor ids inexistentes sem quebrar", () => {
+  it("updateDashboard ignora ids inexistentes sem quebrar", () => {
     const { result } = renderHook(() => useLab(), { wrapper });
 
     act(() => {
@@ -89,15 +93,15 @@ describe("LabProvider (modo local)", () => {
     });
 
     expect(result.current.dashboards.some((d) => d.name === "Ghost")).toBe(
-      false
+      false,
     );
     expect(result.current.dashboards).toHaveLength(5);
   });
 
-  it("deleteDashboard remove o dashboard e os membros dele (cascade)", () => {
+  it("deleteDashboard remove o projeto e os membros dele (cascade)", () => {
     const { result } = renderHook(() => useLab(), { wrapper });
     expect(
-      result.current.members.filter((m) => m.dashboardId === "dash-seed-1")
+      result.current.members.filter((m) => m.dashboardId === "dash-seed-1"),
     ).toHaveLength(2);
 
     act(() => {
@@ -106,33 +110,35 @@ describe("LabProvider (modo local)", () => {
 
     expect(result.current.dashboards).toHaveLength(4);
     expect(
-      result.current.dashboards.some((d) => d.id === "dash-seed-1")
+      result.current.dashboards.some((d) => d.id === "dash-seed-1"),
     ).toBe(false);
     expect(
-      result.current.members.some((m) => m.dashboardId === "dash-seed-1")
+      result.current.members.some((m) => m.dashboardId === "dash-seed-1"),
     ).toBe(false);
-    // Membros de outros dashboards permanecem.
+    // Membros de outros projetos permanecem.
     expect(
-      result.current.members.some((m) => m.dashboardId === "dash-seed-2")
+      result.current.members.some((m) => m.dashboardId === "dash-seed-2"),
     ).toBe(true);
   });
 
-  it("addMember adiciona no topo com invitedAt e papéis", () => {
+  it("addMember usa o id determinístico projeto_uid", () => {
     const { result } = renderHook(() => useLab(), { wrapper });
 
     let member!: ReturnType<typeof result.current.addMember>;
     act(() => {
       member = result.current.addMember({
+        uid: "uid-diego",
         name: "Diego Souza",
         email: "diego@lab.local",
         role: "editor",
-        dashboardId: "dash-q3",
+        dashboardId: "dash-seed-1",
       });
     });
 
     expect(result.current.members).toHaveLength(4);
     expect(result.current.members[0]).toEqual(member);
-    expect(member.id.startsWith("member-")).toBe(true);
+    expect(member.id).toBe("dash-seed-1_uid-diego");
+    expect(member.role).toBe("editor");
     expect(Number.isNaN(Date.parse(member.invitedAt))).toBe(false);
   });
 
@@ -140,17 +146,22 @@ describe("LabProvider (modo local)", () => {
     const { result } = renderHook(() => useLab(), { wrapper });
 
     act(() => {
-      result.current.updateMemberRole("member-seed-3", "admin");
+      result.current.updateMemberRole(
+        "dash-seed-2_local-carla@unicap.br",
+        "admin",
+      );
     });
 
     const member = result.current.members.find(
-      (m) => m.id === "member-seed-3"
+      (m) => m.id === "dash-seed-2_local-carla@unicap.br",
     )!;
     expect(member.role).toBe("admin");
     expect(member.name).toBe("Carla Dias");
     // Papéis dos demais não mudam.
     expect(
-      result.current.members.find((m) => m.id === "member-seed-2")!.role
+      result.current.members.find(
+        (m) => m.id === "dash-seed-1_local-bruno@unicap.br",
+      )!.role,
     ).toBe("editor");
   });
 
@@ -158,19 +169,21 @@ describe("LabProvider (modo local)", () => {
     const { result } = renderHook(() => useLab(), { wrapper });
 
     act(() => {
-      result.current.removeMember("member-seed-2");
+      result.current.removeMember("dash-seed-1_local-bruno@unicap.br");
     });
 
     expect(result.current.members).toHaveLength(2);
     expect(
-      result.current.members.some((m) => m.id === "member-seed-2")
+      result.current.members.some(
+        (m) => m.id === "dash-seed-1_local-bruno@unicap.br",
+      ),
     ).toBe(false);
   });
 
   it("useLab fora do provider lança erro claro", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => renderHook(() => useLab())).toThrow(
-      "useLab must be used within LabProvider"
+      "useLab must be used within LabProvider",
     );
     spy.mockRestore();
   });

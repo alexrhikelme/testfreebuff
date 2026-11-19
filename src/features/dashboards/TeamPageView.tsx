@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   useLab,
-  canManageMembers,
   ROLE_LABEL,
   type MemberRole,
+  type SiteUser,
 } from "./store";
 import { ConfirmDialog } from "@/shared/components/ConfirmDialog";
 import { useToast } from "@/shared/components/Toast";
@@ -83,6 +83,8 @@ type Row = {
   roleLabel: string;
   /** Presente quando o membro vem do LabProvider (papel editável). */
   storeRole?: MemberRole;
+  /** Projeto do membro — a permissão de editar o papel é dele. */
+  dashboardId?: string;
 };
 
 function initials(name: string): string {
@@ -93,8 +95,15 @@ function initials(name: string): string {
 }
 
 export function TeamPageView({ projectId }: { projectId?: string } = {}) {
-  const { members, dashboards, currentRole, addMember, updateMemberRole, removeMember } =
-    useLab();
+  const {
+    members,
+    dashboards,
+    siteUsers,
+    canManageProject,
+    addMember,
+    updateMemberRole,
+    removeMember,
+  } = useLab();
   /** No escopo de projeto, só os membros vinculados a ele. */
   const project = projectId
     ? dashboards.find((d) => d.id === projectId)
@@ -106,7 +115,11 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
   const [teamFilter, setTeamFilter] = useState<string | null>(null);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
-  const canManage = canManageMembers(currentRole);
+  // Atribuir papéis é do admin DO PROJETO (ou de um ServerADM). Na visão do
+  // workspace, quem administra pelo menos um projeto pode convidar.
+  const canManage = projectId
+    ? canManageProject(projectId)
+    : dashboards.some((d) => canManageProject(d.id));
 
   useEffect(() => {
     if (!openMenu) return;
@@ -119,7 +132,11 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
 
   const rows: Row[] = useMemo(() => {
     const fromStore: Row[] = members
-      .filter((m) => !projectId || m.dashboardId === projectId)
+      .filter(
+        (m) =>
+          (!projectId || m.dashboardId === projectId) &&
+          dashboards.some((d) => d.id === m.dashboardId),
+      )
       .map((m) => ({
         id: m.id,
         name: m.name,
@@ -127,6 +144,7 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
         team: dashboards.find((d) => d.id === m.dashboardId)?.name ?? "—",
         roleLabel: ROLE_LABEL[m.role],
         storeRole: m.role,
+        dashboardId: m.dashboardId,
       }));
     // Parceiros e equipes multidisciplinares pertencem ao espaço de
     // trabalho, não a um projeto — dentro do projeto valem só os membros.
@@ -341,7 +359,9 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
                     </td>
                     <td className="px-4 py-3 text-sm text-on-surface-variant">{row.team}</td>
                     <td className="px-4 py-3">
-                      {row.storeRole && canManage ? (
+                      {row.storeRole &&
+                      row.dashboardId &&
+                      canManageProject(row.dashboardId) ? (
                         <select
                           value={row.storeRole}
                           onChange={(e) =>
@@ -395,7 +415,8 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
                             >
                               Copiar e-mail
                             </button>
-                            {canManage && (
+                            {row.dashboardId &&
+                              canManageProject(row.dashboardId) && (
                               <button
                                 type="button"
                                 role="menuitem"
@@ -423,6 +444,7 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
       {inviting && (
         <InviteMemberModal
           dashboards={dashboards}
+          siteUsers={siteUsers}
           defaultDashboardId={projectId}
           onClose={() => setInviting(false)}
           onInvite={(input) => {
@@ -438,7 +460,7 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
       {pendingDelete && (
         <ConfirmDialog
           title="Remover membro?"
-          description={`${pendingDelete.name} perderá o acesso a este workspace.`}
+          description={`${pendingDelete.name} perderá o acesso a este projeto.`}
           confirmLabel="Remover"
           onConfirm={() => {
             removeRow(pendingDelete);
@@ -503,17 +525,19 @@ function TeamIcon({ name }: { name: TeamDef["icon"] }) {
 
 function InviteMemberModal({
   dashboards,
+  siteUsers,
   defaultDashboardId,
   onClose,
   onInvite,
 }: {
   dashboards: ReturnType<typeof useLab>["dashboards"];
+  /** Contas do site: o convite é para um usuário que já tem conta. */
+  siteUsers: SiteUser[];
   /** Projeto da rota: o convite nasce dentro dele. */
   defaultDashboardId?: string;
   onClose: () => void;
   onInvite: ReturnType<typeof useLab>["addMember"];
 }) {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MemberRole>("viewer");
   const [dashboardId, setDashboardId] = useState(
@@ -523,19 +547,28 @@ function InviteMemberModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      setError("Informe o nome.");
+    const target = siteUsers.find(
+      (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
+    );
+    if (!target) {
+      setError("Esse e-mail ainda não tem conta no site.");
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError("Informe um e-mail válido.");
+    if (target.banned) {
+      setError("Essa conta está banida.");
       return;
     }
     if (!dashboardId) {
-      setError("Escolha um dashboard.");
+      setError("Escolha um projeto.");
       return;
     }
-    onInvite({ name: name.trim(), email: email.trim(), role, dashboardId });
+    onInvite({
+      uid: target.uid,
+      name: target.name,
+      email: target.email,
+      role,
+      dashboardId,
+    });
     onClose();
   };
 
@@ -547,25 +580,28 @@ function InviteMemberModal({
         </h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-on-surface">Nome</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Diego Souza"
-              autoFocus
-              className="mt-1 block w-full rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-on-surface">E-mail</label>
+            <label className="block text-sm font-medium text-on-surface">E-mail da conta</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="diego@unicap.br"
+              list="site-users"
+              autoFocus
               className="mt-1 block w-full rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
+            <datalist id="site-users">
+              {siteUsers
+                .filter((u) => !u.banned)
+                .map((u) => (
+                  <option key={u.uid} value={u.email}>
+                    {u.name}
+                  </option>
+                ))}
+            </datalist>
+            <p className="mt-1 text-[11px] text-on-surface-variant/70">
+              Só é possível convidar quem já criou conta no site.
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

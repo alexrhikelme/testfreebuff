@@ -152,12 +152,14 @@ export function RichTextEditor({
   const initialized = useRef(false);
   const [isEmpty, setIsEmpty] = useState(!value);
 
-  // Conteúdo inicial (mount).
+  // Conteúdo inicial (mount). O HTML pode vir do banco (escrito por outro
+  // usuário/API), então é sanitizado ANTES de entrar no DOM: atribuir
+  // `innerHTML` direto executaria, por exemplo, `<img onerror>`.
   useEffect(() => {
     const el = ref.current;
     if (!el || initialized.current) return;
     initialized.current = true;
-    el.innerHTML = value;
+    el.innerHTML = sanitizeRichHtml(value);
     lastEmitted.current = value;
     setIsEmpty(!el.textContent?.trim());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -167,7 +169,7 @@ export function RichTextEditor({
     const el = ref.current;
     if (!el || !initialized.current) return;
     if (value !== lastEmitted.current) {
-      el.innerHTML = value;
+      el.innerHTML = sanitizeRichHtml(value);
       lastEmitted.current = value;
       setIsEmpty(!el.textContent?.trim());
     }

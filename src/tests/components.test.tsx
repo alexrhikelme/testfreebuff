@@ -47,7 +47,7 @@ describe("Permissões (Sprint 4)", () => {
 
   it("rótulos de papel estão definidos", () => {
     expect(ROLE_LABEL.admin).toBe("Administrador");
-    expect(ROLE_LABEL.editor).toBe("Editor");
-    expect(ROLE_LABEL.viewer).toBe("Visualizador");
+    expect(ROLE_LABEL.editor).toBe("Escritor");
+    expect(ROLE_LABEL.viewer).toBe("Leitor");
   });
 });

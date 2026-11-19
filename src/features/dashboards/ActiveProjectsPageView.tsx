@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useLab, canEditDashboard } from "./store";
+import { useLab } from "./store";
 import { DashboardFormModal } from "./DashboardsPageView";
 import { useNotes } from "@/features/notes";
 import type { Dashboard } from "./store";
@@ -19,11 +19,12 @@ const QUICK_SECTIONS = [
 ] as const;
 
 export function ActiveProjectsPageView() {
-  const { dashboards, members, currentRole } = useLab();
+  const { dashboards, members } = useLab();
   const { notes } = useNotes();
   const [creating, setCreating] = useState(false);
 
-  const editable = canEditDashboard(currentRole);
+  // Todo usuário do site pode criar um projeto — e vira admin dele.
+  const editable = true;
 
   const stats = useMemo(() => {
     const map = new Map<string, { total: number; open: number; members: number }>();

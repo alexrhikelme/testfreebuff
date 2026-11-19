@@ -3,27 +3,50 @@ rules_version = '2';
 /**
  * Regras do Firestore — Lab Notes Dashboards (projeto combogo-unicap).
  *
- * Espelham o que o backend Convex aplicava:
- * - leitura: qualquer usuário autenticado;
- * - escrita de conteúdo (notas, sprints, dashboards): editor ou admin;
- * - exclusão de dashboard e gestão de membros: apenas admin;
- * - atividade é escrita pelo app e não é editável/removível;
- * - todo o resto é negado.
+ * Modelo de acesso (projetos privados por dono/convite):
  *
- * Papel do usuário (opcional): documento `users/{uid}` com `{ role:
- * "admin" | "editor" | "viewer" }`. Enquanto esse documento não existir, o
- * usuário autenticado opera como `admin` — que é o comportamento atual do
- * app (o AuthShell ainda não deriva papel do banco). Para restringir alguém,
- * basta criar/editar o documento `users/{uid}` no console.
+ * 1. Toda conta autenticada com e-mail verificado tem um documento
+ *    `users/{uid}` com papel de SITE:
+ *      - "user"        → usuário padrão (criado automaticamente no cadastro);
+ *      - "server_admin" → conta escolhida pelos desenvolvedores.
+ *    O papel de site NÃO dá acesso a projetos de terceiros.
+ *
+ * 2. Projetos vivem em `dashboards/{projectId}` e carregam:
+ *      - `owner_uid`    → quem criou o projeto (admin do projeto);
+ *      - `member_uids`  → lista de uids com acesso (dono + convidados).
+ *    O papel de cada pessoa DENTRO do projeto fica em
+ *    `members/{projectId}_{uid}` com `role` em ["admin","editor","viewer"].
+ *    `member_uids` existe para que as consultas de coleção sejam prováveis
+ *    (`array-contains`), já que as regras não filtram resultados.
+ *
+ * 3. Leitura de notas/atividade exige pertencer ao projeto (`member_uids`).
+ *    Escrita de conteúdo exige ser "admin" ou "editor" do projeto.
+ *    Nota sem projeto é pessoal: só o dono (`owner_uid`) lê e escreve.
+ *    Excluir projeto: apenas admin do projeto ou ServerADM.
+ *
+ * 4. ServerADM lê, escreve, altera e atribui papéis em TODOS os projetos,
+ *    e ainda pode banir (`banned: true`) ou apagar perfis de terceiros.
+ *    Apagar a conta de autenticação em si exige o Admin SDK / console.
+ *
+ * 5. `users` é o diretório do site (nome/e-mail) usado para convidar por
+ *    e-mail; qualquer conta registrada pode listá-lo. O papel de site só
+ *    muda por um ServerADM (nunca por conta própria).
+ *
+ * Bootstrap (uma única vez, no console do Firebase):
+ *   Firestore → coleção `users` → documento com ID = UID do desenvolvedor
+ *   → campo `role` (string) = "server_admin".
  *
  * Campos usados pelo app:
+ *   users:      role, name, email, banned, created_at
+ *   dashboards: name, description, owner_uid, member_uids, created_at, updated_at
+ *   members:    uid, name, email, role, dashboard_id, invited_at
  *   notes:      id, title, content, status, tags, assignee, start_date,
- *               due_date, dashboard_id, sprint_id, created_at, updated_at,
- *               updated_by, order
- *   dashboards: id, name, description, created_at, updated_at
- *   members:    id, name, email, role, dashboard_id, invited_at
+ *               due_date, dashboard_id, sprint_id, owner_uid, member_uids,
+ *               created_at, updated_at, updated_by, order
  *   sprints:    id, title, created_at
- *   activity:   note_id, note_title, action, actor, at
+ *   activity:   note_id, note_title, action, actor, actor_uid, dashboard_id,
+ *               member_uids, at
+ *   admin_requests: uid, name, email, requested_at
  */
 
 service cloud.firestore {
@@ -34,24 +57,86 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function role() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-        : 'admin';
+    function emailVerified() {
+      return signedIn() && request.auth.token.email_verified == true;
     }
 
-    function canRead() {
-      return signedIn();
+    function profilePath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
     }
 
-    /** Editor ou admin: escreve conteúdo (notas, sprints, dashboards). */
-    function canWrite() {
-      return signedIn() && role() in ['admin', 'editor'];
+    /** Documento de perfil do solicitante (as regras o leem mesmo sem regra). */
+    function profile() {
+      return get(profilePath(request.auth.uid));
     }
 
-    /** Admin: exclui dashboards e gerencia membros. */
-    function isAdmin() {
-      return signedIn() && role() == 'admin';
+    function hasProfile() {
+      return signedIn() && exists(profilePath(request.auth.uid));
+    }
+
+    /** Papel de SITE do solicitante. */
+    function siteRole() {
+      return hasProfile() ? profile().data.role : 'none';
+    }
+
+    /**
+     * Cadastro válido: e-mail verificado, perfil existente, papel de site
+     * reconhecido e conta não banida. "admin"/"editor"/"viewer" são papéis
+     * legados (modelo anterior) e continuam valendo como usuário comum.
+     */
+    function isRegistered() {
+      return emailVerified()
+        && hasProfile()
+        && siteRole() in ['user', 'server_admin', 'admin', 'editor', 'viewer']
+        && profile().data.banned != true;
+    }
+
+    function isServerAdmin() {
+      return isRegistered() && siteRole() == 'server_admin';
+    }
+
+    // ------------------------------------------------------------- projetos
+    function projectPath(projectId) {
+      return /databases/$(database)/documents/dashboards/$(projectId);
+    }
+
+    function memberPath(projectId) {
+      return /databases/$(database)/documents/members/$(projectId + '_' + request.auth.uid);
+    }
+
+    /** Papel do solicitante no projeto: admin | editor | viewer | none. */
+    function projectRole(projectId) {
+      return exists(memberPath(projectId)) ? get(memberPath(projectId)).data.role : 'none';
+    }
+
+    function isProjectOwner(projectId) {
+      return exists(projectPath(projectId))
+        && get(projectPath(projectId)).data.owner_uid == request.auth.uid;
+    }
+
+    function isProjectAdmin(projectId) {
+      return isRegistered() && (
+        isServerAdmin()
+        || isProjectOwner(projectId)
+        || projectRole(projectId) == 'admin'
+      );
+    }
+
+    function isProjectEditor(projectId) {
+      return isRegistered() && (
+        isProjectAdmin(projectId) || projectRole(projectId) == 'editor'
+      );
+    }
+
+    function isProjectMember(projectId) {
+      return isRegistered() && (
+        isProjectAdmin(projectId) || projectRole(projectId) in ['editor', 'viewer']
+      );
+    }
+
+    /** Membro pela lista do documento (provável por `array-contains`). */
+    function inMemberList() {
+      return isRegistered() && request.auth.uid in resource.data.member_uids;
     }
 
     function noteStatus() {
@@ -66,89 +151,167 @@ service cloud.firestore {
       return ['created', 'updated', 'status_changed', 'moved', 'deleted'];
     }
 
+    function canReadNote() {
+      return isServerAdmin()
+        || ('dashboard_id' in resource.data
+            && resource.data.dashboard_id != null
+            && isProjectMember(resource.data.dashboard_id))
+        || (('dashboard_id' in resource.data
+            && resource.data.dashboard_id == null)
+            && resource.data.owner_uid == request.auth.uid);
+    }
+
+    function canWriteNote() {
+      return isServerAdmin()
+        || ('dashboard_id' in resource.data
+            && resource.data.dashboard_id != null
+            && isProjectEditor(resource.data.dashboard_id))
+        || (('dashboard_id' in resource.data
+            && resource.data.dashboard_id == null)
+            && resource.data.owner_uid == request.auth.uid);
+    }
+
+    // ------------------------------------------------------------ projetos
+    match /dashboards/{projectId} {
+      allow get, list: if isRegistered()
+        && (isServerAdmin() || request.auth.uid in resource.data.member_uids);
+
+      allow create: if isRegistered()
+        && request.resource.data.owner_uid == request.auth.uid
+        && request.resource.data.member_uids == [request.auth.uid]
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+
+      allow update: if isProjectAdmin(projectId)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.owner_uid == resource.data.owner_uid;
+
+      allow delete: if isProjectAdmin(projectId);
+    }
+
+    // ------------------------------------------------------------- membros
+    // Diretório de membros: qualquer conta registrada lê (é assim que o app
+    // descobre nomes/e-mails para convidar). Papéis só o admin do projeto.
+    match /members/{memberId} {
+      allow read: if isRegistered();
+
+      allow create, update: if isRegistered() && (
+        isProjectAdmin(request.resource.data.dashboard_id)
+        || (
+          // O criador registra a si mesmo como admin do projeto novo.
+          request.resource.data.uid == request.auth.uid
+          && request.resource.data.role == 'admin'
+          && isProjectOwner(request.resource.data.dashboard_id)
+        )
+      )
+      && request.resource.data.uid is string
+      && request.resource.data.role in memberRoles();
+
+      allow delete: if isRegistered()
+        && isProjectAdmin(resource.data.dashboard_id);
+    }
+
     // --------------------------------------------------------------- notas
     match /notes/{noteId} {
-      allow read: if canRead();
+      allow get, list: if isRegistered()
+        && (isServerAdmin()
+            || (request.auth.uid in resource.data.member_uids));
 
-      allow create: if canWrite()
-        && request.resource.data.keys().hasAll([
-             'title', 'status', 'tags', 'created_at', 'updated_at'
-           ])
+      allow create: if isRegistered()
+        && request.resource.data.owner_uid == request.auth.uid
+        && request.resource.data.member_uids.hasAll([request.auth.uid])
+        && (
+          !('dashboard_id' in request.resource.data)
+          || request.resource.data.dashboard_id == null
+          || isProjectEditor(request.resource.data.dashboard_id)
+        )
+        && request.resource.data.keys().hasAll(['title', 'status', 'tags', 'created_at'])
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
         && request.resource.data.status in noteStatus()
         && request.resource.data.tags is list;
 
-      allow update: if canWrite()
+      allow update: if canWriteNote()
         && request.resource.data.title is string
         && request.resource.data.status in noteStatus()
         && request.resource.data.tags is list;
 
-      allow delete: if canWrite();
-    }
-
-    // ---------------------------------------------------------- dashboards
-    match /dashboards/{dashboardId} {
-      allow read: if canRead();
-
-      allow create: if canWrite()
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0;
-
-      allow update: if canWrite()
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0;
-
-      allow delete: if isAdmin();
-    }
-
-    // ------------------------------------------------------------- membros
-    match /members/{memberId} {
-      allow read: if canRead();
-
-      allow create, update: if isAdmin()
-        && request.resource.data.name is string
-        && request.resource.data.email is string
-        && request.resource.data.role in memberRoles()
-        && request.resource.data.dashboard_id is string;
-
-      allow delete: if isAdmin();
+      allow delete: if canWriteNote();
     }
 
     // -------------------------------------------------------------- sprints
+    // Colunas do quadro são estrutura compartilhada (sem conteúdo sensível);
+    // continuam abertas a qualquer conta registrada.
     match /sprints/{sprintId} {
-      allow read: if canRead();
+      allow read: if isRegistered();
 
-      allow create, update: if canWrite()
+      allow create, update: if isRegistered()
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0;
 
-      allow delete: if canWrite();
+      allow delete: if isRegistered();
     }
 
     // ------------------------------------------------------------ atividade
     match /activity/{activityId} {
-      allow read: if canRead();
+      allow get, list: if isRegistered()
+        && (isServerAdmin()
+            || (request.auth.uid in resource.data.member_uids));
 
-      allow create: if canWrite()
+      allow create: if isRegistered()
+        && request.resource.data.actor_uid == request.auth.uid
         && request.resource.data.note_id is string
         && request.resource.data.action in activityActions();
 
-      // Histórico é imutável (nem editor nem admin reescrevem atividade).
-      allow update, delete: if false;
+      // Histórico é imutável, exceto a lista de membros (sincronizada pelo
+      // admin do projeto quando alguém é removido).
+      allow update: if isRegistered()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['member_uids'])
+        && (
+          isServerAdmin()
+          || ('dashboard_id' in resource.data
+              && resource.data.dashboard_id != null
+              && isProjectAdmin(resource.data.dashboard_id))
+        );
+
+      allow delete: if false;
     }
 
-    // ------------------------------------------------------ perfil / papel
-    // O usuário lê o próprio perfil; só admin define papéis (evita que um
-    // viewer se promova a admin escrevendo no próprio documento).
+    // -------------------------------------------------------------- perfis
     match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      // O próprio usuário lê o perfil (para saber se já é ServerADM);
+      // listar o diretório exige conta registrada.
+      allow get: if signedIn() && (request.auth.uid == uid || isServerAdmin());
+      allow list: if isRegistered();
 
-      allow create, update: if isAdmin()
-        && (!('role' in request.resource.data)
-            || request.resource.data.role in memberRoles());
+      // Cadastro se autoprovisiona como "user" — nunca como admin.
+      allow create: if emailVerified()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'user'
+        && request.resource.data.banned == false
+        && request.resource.data.email == request.auth.token.email;
 
-      allow delete: if isAdmin();
+      // Papel de site e banimento: só ServerADM (e nunca a si mesmo, para
+      // não se trancar fora).
+      allow update: if isServerAdmin()
+        && request.auth.uid != uid
+        && request.resource.data.role in ['user', 'server_admin'];
+
+      // Remoção do perfil: só ServerADM, nunca o próprio.
+      allow delete: if isServerAdmin() && request.auth.uid != uid;
+    }
+
+    // -------------------------------------------- pedidos de ServerADM
+    match /admin_requests/{uid} {
+      allow get, list: if signedIn() && (request.auth.uid == uid || isServerAdmin());
+
+      allow create: if isRegistered()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid;
+
+      allow update: if isServerAdmin();
+      allow delete: if isServerAdmin() || request.auth.uid == uid;
     }
 
     // Qualquer outra coleção é negada.

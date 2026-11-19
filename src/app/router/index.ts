@@ -1,1 +1,7 @@
-export { AuthShell, RequireAuth, PublicOnly, useAuth } from "./AppRouter";
+export {
+  AuthShell,
+  RequireAuth,
+  PublicOnly,
+  ServerAdminRequestPage,
+  useAuth,
+} from "./AppRouter";

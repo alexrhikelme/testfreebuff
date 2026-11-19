@@ -3,6 +3,7 @@ import {
   collection,
   query,
   orderBy,
+  where,
   onSnapshot,
   setDoc,
   updateDoc,
@@ -22,6 +23,7 @@ import type {
   Dashboard,
   Member,
   MemberRole,
+  SiteUser,
 } from "@/features/dashboards/types";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -29,7 +31,7 @@ import {
   getFirebaseFirestore,
   isFirebaseReady,
 } from "@/shared/firebase";
-import { getBackendMode, makeId, nowIso, CURRENT_USER } from "./config";
+import { getBackendMode, makeId, nowIso } from "./config";
 
 /* ------------------------------- contratos ------------------------------- */
 
@@ -52,6 +54,8 @@ const SPRINTS = "sprints";
 const DASHBOARDS = "dashboards";
 const MEMBERS = "members";
 const ACTIVITY = "activity";
+const USERS = "users";
+const ADMIN_REQUESTS = "admin_requests";
 
 /** Campos da nota que podem ser limpos (undefined vira null no banco). */
 const CLEARABLE_FIELDS = new Set([
@@ -93,6 +97,22 @@ function db() {
   return getFirebaseFirestore();
 }
 
+/** UID da sessão atual (`null` sem login). */
+function currentUid(): string | null {
+  return getFirebaseAuth()?.currentUser?.uid ?? null;
+}
+
+/** Nome de exibição usado em `actor`/`updated_by`. */
+function actorName(): string {
+  const user = getFirebaseAuth()?.currentUser;
+  if (!user) return "Sistema";
+  return user.displayName || (user.email ?? "Usuário").split("@")[0];
+}
+
+function actorEmail(): string {
+  return getFirebaseAuth()?.currentUser?.email ?? "";
+}
+
 /**
  * Erro de leitura do Firestore: quase sempre é a regra de segurança do
  * projeto negando acesso. Loga uma mensagem acionável e devolve lista vazia.
@@ -105,7 +125,7 @@ function reportQueryError(name: string, error: unknown) {
   if (code === "permission-denied") {
     console.error(
       `Firestore negou a leitura de "${name}" (permission-denied). ` +
-        "Ajuste as regras do projeto para permitir usuários autenticados.",
+        "Verifique se as regras publicadas já são o modelo por projeto.",
     );
     return;
   }
@@ -144,7 +164,14 @@ function fromNoteDoc(id: string, data: Record<string, unknown>): Note {
   };
 }
 
-function toNoteDoc(input: NewNoteInput, id: string, actor: string, now: string) {
+function toNoteDoc(
+  input: NewNoteInput,
+  id: string,
+  actor: string,
+  now: string,
+  ownerUid: string,
+  memberUids: string[],
+) {
   return {
     id,
     title: input.title,
@@ -156,26 +183,56 @@ function toNoteDoc(input: NewNoteInput, id: string, actor: string, now: string) 
     due_date: input.dueDate ?? null,
     dashboard_id: input.dashboardId ?? null,
     sprint_id: input.sprintId ?? null,
+    owner_uid: ownerUid,
+    member_uids: memberUids,
     created_at: now,
     updated_at: now,
     updated_by: actor,
   };
 }
 
+/** Membros do projeto (`member_uids`) usados como lista de acesso da nota. */
+async function projectMemberUids(
+  dashboardId: string,
+  fallbackUid: string,
+): Promise<string[]> {
+  const firestore = db();
+  if (!firestore) return [fallbackUid];
+  try {
+    const snap = await getDoc(doc(firestore, DASHBOARDS, dashboardId));
+    if (snap.exists()) {
+      const list = (snap.data() as Record<string, unknown>).member_uids;
+      if (Array.isArray(list) && list.length > 0) {
+        return Array.from(new Set([...list.map(String), fallbackUid]));
+      }
+    }
+  } catch {
+    // Sem leitura do projeto: a nota fica restrita a quem a criou.
+  }
+  return [fallbackUid];
+}
+
 async function logActivity(
-  noteId: string,
-  noteTitle: string,
-  action: ActivityEntry["action"],
-  actor: string,
+  entry: {
+    noteId: string;
+    noteTitle: string;
+    action: ActivityEntry["action"];
+    dashboardId?: string | null;
+    memberUids?: string[];
+  },
 ) {
   const col = firestoreCollection(ACTIVITY);
-  if (!col) return;
+  const uid = currentUid();
+  if (!col || !uid) return;
   try {
     await setDoc(doc(col, makeId("act")), {
-      note_id: noteId,
-      note_title: noteTitle,
-      action,
-      actor,
+      note_id: entry.noteId,
+      note_title: entry.noteTitle,
+      action: entry.action,
+      actor: actorName(),
+      actor_uid: uid,
+      dashboard_id: entry.dashboardId ?? null,
+      member_uids: entry.memberUids ?? [uid],
       at: nowIso(),
     });
   } catch {
@@ -189,9 +246,7 @@ async function logActivity(
  * UID do usuário autenticado no Firebase (`null` sem sessão).
  *
  * É dependência de todas as assinaturas do Firestore: um listener aberto
- * antes do login é recusado pelas regras (`permission-denied`) e morre. Sem
- * esta dependência, a primeira visita ao site ficava vazia até um refresh,
- * porque as coleções nunca eram reassinadas depois do login.
+ * antes do login é recusado pelas regras (`permission-denied`) e morre.
  */
 export function useFirebaseUid(): string | null {
   const isFirebase = getBackendMode() === "firebase";
@@ -210,28 +265,33 @@ export function useFirebaseUid(): string | null {
   return uid;
 }
 
-/** Notas do Firestore, ordenadas por criação (mais recentes primeiro). */
+/**
+ * Notas visíveis ao usuário: as de projetos em que ele figura em
+ * `member_uids` (o filtro torna a consulta provável pelas regras).
+ *
+ * Sem `orderBy` de propósito: `array-contains` + ordenação exigiria índice
+ * composto, então a ordenação é feita no cliente.
+ */
 export function useNotesQuery(): Note[] {
-  const firestore = db();
   const isFirebase = getBackendMode() === "firebase" && isFirebaseReady();
   const uid = useFirebaseUid();
   const [notes, setNotes] = useState<Note[]>([]);
 
   useEffect(() => {
-    if (!isFirebase || !firestore || !uid) return;
+    if (!isFirebase || !uid) return;
     const col = firestoreCollection(NOTES);
     if (!col) return;
 
-    const q = query(col, orderBy("created_at", "desc"));
+    const q = query(col, where("member_uids", "array-contains", uid));
     const unsub = onSnapshot(
       q,
       { includeMetadataChanges: false },
       (snapshot) => {
-        setNotes(
-          snapshot.docs.map((d) =>
-            fromNoteDoc(d.id, d.data() as Record<string, unknown>),
-          ),
+        const next = snapshot.docs.map((d) =>
+          fromNoteDoc(d.id, d.data() as Record<string, unknown>),
         );
+        next.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        setNotes(next);
       },
       (error) => {
         reportQueryError(NOTES, error);
@@ -239,7 +299,7 @@ export function useNotesQuery(): Note[] {
       },
     );
     return () => unsub();
-  }, [isFirebase, firestore, uid]);
+  }, [isFirebase, uid]);
 
   return notes;
 }
@@ -267,12 +327,12 @@ export function useNotesLoading(): boolean {
       return;
     }
 
-    const q = query(col, orderBy("created_at", "desc"));
+    const q = query(col, where("member_uids", "array-contains", uid));
     let mounted = true;
     const unsub = onSnapshot(
       q,
       { includeMetadataChanges: true },
-      (snapshot) => {
+      () => {
         if (mounted) setLoading(false);
       },
       (error) => {
@@ -289,7 +349,7 @@ export function useNotesLoading(): boolean {
   return loading;
 }
 
-/** Atividade recente (edições colaborativas). */
+/** Atividade recente visível ao usuário (por projeto). */
 export function useActivityQuery(): ActivityEntry[] {
   const isFirebase = getBackendMode() === "firebase" && isFirebaseReady();
   const uid = useFirebaseUid();
@@ -300,24 +360,24 @@ export function useActivityQuery(): ActivityEntry[] {
     const col = firestoreCollection(ACTIVITY);
     if (!col) return;
 
-    const q = query(col, orderBy("at", "desc"));
+    const q = query(col, where("member_uids", "array-contains", uid));
     const unsub = onSnapshot(
       q,
       {},
       (snapshot) => {
-        setActivity(
-          snapshot.docs.map((d) => {
-            const data = d.data() as Record<string, unknown>;
-            return {
-              id: d.id,
-              noteId: String(data.note_id ?? ""),
-              noteTitle: String(data.note_title ?? ""),
-              action: (data.action as ActivityEntry["action"]) ?? "updated",
-              actor: String(data.actor ?? CURRENT_USER),
-              at: isoOf(data.at, nowIso()),
-            };
-          }),
-        );
+        const next = snapshot.docs.map((d) => {
+          const data = d.data() as Record<string, unknown>;
+          return {
+            id: d.id,
+            noteId: String(data.note_id ?? ""),
+            noteTitle: String(data.note_title ?? ""),
+            action: (data.action as ActivityEntry["action"]) ?? "updated",
+            actor: String(data.actor ?? ""),
+            at: isoOf(data.at, nowIso()),
+          };
+        });
+        next.sort((a, b) => b.at.localeCompare(a.at));
+        setActivity(next);
       },
       (error) => {
         reportQueryError(ACTIVITY, error);
@@ -341,7 +401,7 @@ export function useNotesOrderQuery(): Record<string, number> {
     const col = firestoreCollection(NOTES);
     if (!col) return;
 
-    const q = query(col, orderBy("order", "asc"));
+    const q = query(col, where("member_uids", "array-contains", uid));
     const unsub = onSnapshot(
       q,
       {},
@@ -364,7 +424,7 @@ export function useNotesOrderQuery(): Record<string, number> {
   return order;
 }
 
-/** Dashboards (projetos) do Firestore. */
+/** Projetos (dashboards) em que o usuário é membro. */
 export function useDashboardsQuery(): Dashboard[] {
   const isFirebase = getBackendMode() === "firebase" && isFirebaseReady();
   const uid = useFirebaseUid();
@@ -375,23 +435,24 @@ export function useDashboardsQuery(): Dashboard[] {
     const col = firestoreCollection(DASHBOARDS);
     if (!col) return;
 
-    const q = query(col, orderBy("created_at", "desc"));
+    const q = query(col, where("member_uids", "array-contains", uid));
     const unsub = onSnapshot(
       q,
       {},
       (snapshot) => {
-        setDashboards(
-          snapshot.docs.map((d) => {
-            const data = d.data() as Record<string, unknown>;
-            return {
-              id: d.id,
-              name: String(data.name ?? ""),
-              description: String(data.description ?? ""),
-              createdAt: isoOf(data.created_at, nowIso()),
-              updatedAt: isoOf(data.updated_at, nowIso()),
-            };
-          }),
-        );
+        const next = snapshot.docs.map((d) => {
+          const data = d.data() as Record<string, unknown>;
+          return {
+            id: d.id,
+            name: String(data.name ?? ""),
+            description: String(data.description ?? ""),
+            ownerUid: data.owner_uid != null ? String(data.owner_uid) : undefined,
+            createdAt: isoOf(data.created_at, nowIso()),
+            updatedAt: isoOf(data.updated_at, nowIso()),
+          };
+        });
+        next.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        setDashboards(next);
       },
       (error) => {
         reportQueryError(DASHBOARDS, error);
@@ -404,7 +465,7 @@ export function useDashboardsQuery(): Dashboard[] {
   return dashboards;
 }
 
-/** Membros convidados por dashboard. */
+/** Membros (papéis por projeto) — diretório legível por qualquer conta. */
 export function useMembersQuery(): Member[] {
   const isFirebase = getBackendMode() === "firebase" && isFirebaseReady();
   const uid = useFirebaseUid();
@@ -415,25 +476,25 @@ export function useMembersQuery(): Member[] {
     const col = firestoreCollection(MEMBERS);
     if (!col) return;
 
-    const q = query(col, orderBy("invited_at", "desc"));
     const unsub = onSnapshot(
-      q,
+      col,
       {},
       (snapshot) => {
-        setMembers(
-          snapshot.docs.map((d) => {
-            const data = d.data() as Record<string, unknown>;
-            return {
-              id: d.id,
-              name: String(data.name ?? ""),
-              email: String(data.email ?? ""),
-              role: (data.role as MemberRole) ?? "viewer",
-              dashboardId:
-                data.dashboard_id != null ? String(data.dashboard_id) : "",
-              invitedAt: isoOf(data.invited_at, nowIso()),
-            };
-          }),
-        );
+        const next = snapshot.docs.map((d) => {
+          const data = d.data() as Record<string, unknown>;
+          return {
+            id: d.id,
+            uid: data.uid != null ? String(data.uid) : undefined,
+            name: String(data.name ?? ""),
+            email: String(data.email ?? ""),
+            role: (data.role as MemberRole) ?? "viewer",
+            dashboardId:
+              data.dashboard_id != null ? String(data.dashboard_id) : "",
+            invitedAt: isoOf(data.invited_at, nowIso()),
+          };
+        });
+        next.sort((a, b) => b.invitedAt.localeCompare(a.invitedAt));
+        setMembers(next);
       },
       (error) => {
         reportQueryError(MEMBERS, error);
@@ -446,10 +507,47 @@ export function useMembersQuery(): Member[] {
   return members;
 }
 
+/** Diretório de contas do site (nome/e-mail) para convidar por e-mail. */
+export function useSiteUsersQuery(): SiteUser[] {
+  const isFirebase = getBackendMode() === "firebase" && isFirebaseReady();
+  const uid = useFirebaseUid();
+  const [users, setUsers] = useState<SiteUser[]>([]);
+
+  useEffect(() => {
+    if (!isFirebase || !uid) return;
+    const col = firestoreCollection(USERS);
+    if (!col) return;
+
+    const unsub = onSnapshot(
+      col,
+      {},
+      (snapshot) => {
+        const next = snapshot.docs.map((d) => {
+          const data = d.data() as Record<string, unknown>;
+          return {
+            uid: d.id,
+            name: String(data.name ?? ""),
+            email: String(data.email ?? ""),
+            banned: data.banned === true,
+          };
+        });
+        next.sort((a, b) => a.name.localeCompare(b.name));
+        setUsers(next);
+      },
+      (error) => {
+        reportQueryError(USERS, error);
+        setUsers([]);
+      },
+    );
+    return () => unsub();
+  }, [isFirebase, uid]);
+
+  return users;
+}
+
 /**
  * Sprints do quadro (colunas criadas pelo usuário). Ficam na coleção
- * `sprints`, ordenados pela criação — assim todos os usuários do workspace
- * veem as mesmas colunas.
+ * `sprints`, ordenados pela criação — estrutura compartilhada do workspace.
  */
 export function useSprintsQuery(): SprintColumn[] {
   const isFirebase = getBackendMode() === "firebase" && isFirebaseReady();
@@ -520,9 +618,12 @@ export function useSprintMutations() {
         if (!firestore) return;
         await deleteDoc(doc(firestore, SPRINTS, id));
 
+        const uid = currentUid();
         const notesCol = firestoreCollection(NOTES);
-        if (!notesCol) return;
-        const snap = await getDocs(notesCol);
+        if (!notesCol || !uid) return;
+        const snap = await getDocs(
+          query(notesCol, where("member_uids", "array-contains", uid)),
+        );
         await Promise.all(
           snap.docs
             .filter(
@@ -555,10 +656,23 @@ export function useNoteMutations() {
       createNote: async (input: NewNoteInput, id: string = makeId("note")) => {
         if (!isFirebase) return;
         const col = firestoreCollection(NOTES);
-        if (!col) return;
+        const uid = currentUid();
+        if (!col || !uid) return;
         const now = nowIso();
-        await setDoc(doc(col, id), toNoteDoc(input, id, CURRENT_USER, now));
-        await logActivity(id, input.title, "created", CURRENT_USER);
+        const memberUids = input.dashboardId
+          ? await projectMemberUids(input.dashboardId, uid)
+          : [uid];
+        await setDoc(
+          doc(col, id),
+          toNoteDoc(input, id, actorName(), now, uid, memberUids),
+        );
+        await logActivity({
+          noteId: id,
+          noteTitle: input.title,
+          action: "created",
+          dashboardId: input.dashboardId ?? null,
+          memberUids,
+        });
       },
 
       /** Atualiza campos da nota (undefined em campos limpáveis = null). */
@@ -566,16 +680,48 @@ export function useNoteMutations() {
         if (!isFirebase) return;
         const firestore = db();
         if (!firestore) return;
+        const uid = currentUid();
+        const ref = doc(firestore, NOTES, id);
+
+        // Estado atual: define o dono da nota e a atividade registrada.
+        let current: Record<string, unknown> = {};
+        try {
+          const snap = await getDoc(ref);
+          if (snap.exists()) current = snap.data() as Record<string, unknown>;
+        } catch {
+          // Sem leitura, a nota é tratada como pessoal do usuário atual.
+        }
+
         const payload = normalizeNotePatch(patch);
         payload.updated_at = nowIso();
-        payload.updated_by = CURRENT_USER;
-        await updateDoc(doc(firestore, NOTES, id), payload);
-        await logActivity(
-          id,
-          patch.title ?? "",
-          patch.status !== undefined ? "status_changed" : "updated",
-          CURRENT_USER,
-        );
+        payload.updated_by = actorName();
+
+        // Mudou de projeto (ou deixou de ter um): a lista de acesso acompanha
+        // — entra nos membros do projeto, ou volta a ser pessoal do criador.
+        if (patch.dashboardId !== undefined) {
+          if (patch.dashboardId && uid) {
+            payload.member_uids = await projectMemberUids(patch.dashboardId, uid);
+          } else {
+            const owner =
+              current.owner_uid != null ? String(current.owner_uid) : uid;
+            payload.member_uids = owner ? [owner] : [];
+          }
+        }
+
+        const dashboardId =
+          patch.dashboardId !== undefined
+            ? (patch.dashboardId ?? null)
+            : current.dashboard_id != null
+              ? String(current.dashboard_id)
+              : null;
+
+        await updateDoc(ref, payload);
+        await logActivity({
+          noteId: id,
+          noteTitle: patch.title ?? "",
+          action: patch.status !== undefined ? "status_changed" : "updated",
+          dashboardId,
+        });
       },
 
       /** Move a nota de coluna e grava a posição no Kanban. */
@@ -583,13 +729,29 @@ export function useNoteMutations() {
         if (!isFirebase) return;
         const firestore = db();
         if (!firestore) return;
-        await updateDoc(doc(firestore, NOTES, id), {
+        const ref = doc(firestore, NOTES, id);
+        let dashboardId: string | null = null;
+        try {
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            const data = snap.data() as Record<string, unknown>;
+            dashboardId = data.dashboard_id != null ? String(data.dashboard_id) : null;
+          }
+        } catch {
+          // Sem leitura, a atividade fica sem projeto.
+        }
+        await updateDoc(ref, {
           status,
           order: order ?? null,
           updated_at: nowIso(),
-          updated_by: CURRENT_USER,
+          updated_by: actorName(),
         });
-        await logActivity(id, "", "moved", CURRENT_USER);
+        await logActivity({
+          noteId: id,
+          noteTitle: "",
+          action: "moved",
+          dashboardId,
+        });
       },
 
       /** Remove a nota (e registra a atividade com o título removido). */
@@ -599,18 +761,82 @@ export function useNoteMutations() {
         if (!firestore) return;
         const ref = doc(firestore, NOTES, id);
         let title = "";
+        let dashboardId: string | null = null;
+        let memberUids: string[] | undefined;
         try {
           const snap = await getDoc(ref);
-          if (snap.exists()) title = String(snap.data().title ?? "");
+          if (snap.exists()) {
+            const data = snap.data() as Record<string, unknown>;
+            title = String(data.title ?? "");
+            dashboardId = data.dashboard_id != null ? String(data.dashboard_id) : null;
+            if (Array.isArray(data.member_uids)) {
+              memberUids = data.member_uids.map(String);
+            }
+          }
         } catch {
           // Sem leitura não há título para a atividade; segue com a remoção.
         }
         await deleteDoc(ref);
-        await logActivity(id, title, "deleted", CURRENT_USER);
+        await logActivity({
+          noteId: id,
+          noteTitle: title,
+          action: "deleted",
+          dashboardId,
+          memberUids,
+        });
       },
     }),
     [isFirebase],
   );
+}
+
+/**
+ * Atualiza a lista de acesso (`member_uids`) do projeto, das notas e da
+ * atividade — é ela que as regras e as consultas usam.
+ */
+async function syncProjectMemberUids(
+  projectId: string,
+  memberUids: string[],
+): Promise<void> {
+  const firestore = db();
+  const uid = currentUid();
+  if (!firestore || !uid) return;
+  const unique = Array.from(new Set([...memberUids, uid]));
+
+  await updateDoc(doc(firestore, DASHBOARDS, projectId), {
+    member_uids: unique,
+    updated_at: nowIso(),
+  });
+
+  const notesCol = firestoreCollection(NOTES);
+  if (notesCol) {
+    const snap = await getDocs(
+      query(notesCol, where("member_uids", "array-contains", uid)),
+    );
+    await Promise.all(
+      snap.docs
+        .filter(
+          (d) =>
+            (d.data() as Record<string, unknown>).dashboard_id === projectId,
+        )
+        .map((d) => updateDoc(d.ref, { member_uids: unique })),
+    );
+  }
+
+  const activityCol = firestoreCollection(ACTIVITY);
+  if (activityCol) {
+    const snap = await getDocs(
+      query(activityCol, where("member_uids", "array-contains", uid)),
+    );
+    await Promise.all(
+      snap.docs
+        .filter(
+          (d) =>
+            (d.data() as Record<string, unknown>).dashboard_id === projectId,
+        )
+        .map((d) => updateDoc(d.ref, { member_uids: unique })),
+    );
+  }
 }
 
 export function useDashboardMutations() {
@@ -618,20 +844,38 @@ export function useDashboardMutations() {
 
   return useMemo(
     () => ({
+      /**
+       * Cria o projeto e registra o criador como admin dele na mesma ação
+       * (o documento de membro tem id determinístico `{projeto}_{uid}`).
+       */
       createDashboard: async (
         input: { name: string; description?: string },
         id: string = makeId("dash"),
       ) => {
         if (!isFirebase) return;
         const col = firestoreCollection(DASHBOARDS);
-        if (!col) return;
+        const uid = currentUid();
+        if (!col || !uid) return;
         const now = nowIso();
         await setDoc(doc(col, id), {
           id,
           name: input.name,
           description: input.description ?? "",
+          owner_uid: uid,
+          member_uids: [uid],
           created_at: now,
           updated_at: now,
+        });
+
+        const membersCol = firestoreCollection(MEMBERS);
+        if (!membersCol) return;
+        await setDoc(doc(membersCol, `${id}_${uid}`), {
+          uid,
+          name: actorName(),
+          email: actorEmail(),
+          role: "admin",
+          dashboard_id: id,
+          invited_at: now,
         });
       },
 
@@ -649,12 +893,12 @@ export function useDashboardMutations() {
         await updateDoc(doc(firestore, DASHBOARDS, id), payload);
       },
 
-      /** Remove o dashboard, seus membros e desvincula as notas dele. */
+      /** Remove o projeto, seus vínculos e devolve as notas ao criador. */
       deleteDashboard: async (id: string) => {
         if (!isFirebase) return;
         const firestore = db();
-        if (!firestore) return;
-        await deleteDoc(doc(firestore, DASHBOARDS, id));
+        const uid = currentUid();
+        if (!firestore || !uid) return;
 
         const membersCol = firestoreCollection(MEMBERS);
         if (membersCol) {
@@ -670,37 +914,59 @@ export function useDashboardMutations() {
 
         const notesCol = firestoreCollection(NOTES);
         if (notesCol) {
-          const snap = await getDocs(notesCol);
+          const snap = await getDocs(
+            query(notesCol, where("member_uids", "array-contains", uid)),
+          );
           await Promise.all(
             snap.docs
               .filter(
                 (d) => (d.data() as Record<string, unknown>).dashboard_id === id,
               )
-              .map((d) => updateDoc(d.ref, { dashboard_id: null })),
+              .map((d) => {
+                const data = d.data() as Record<string, unknown>;
+                const owner =
+                  data.owner_uid != null ? String(data.owner_uid) : uid;
+                return updateDoc(d.ref, {
+                  dashboard_id: null,
+                  member_uids: [owner],
+                });
+              }),
           );
         }
+
+        await deleteDoc(doc(firestore, DASHBOARDS, id));
       },
 
-      addMember: async (
-        input: {
-          name: string;
-          email: string;
-          role: MemberRole;
-          dashboardId: string;
-        },
-        id: string = makeId("member"),
-      ) => {
+      /** Convida (ou atualiza) um usuário do site em um projeto. */
+      addMember: async (input: {
+        uid: string;
+        name: string;
+        email: string;
+        role: MemberRole;
+        dashboardId: string;
+      }) => {
         if (!isFirebase) return;
-        const col = firestoreCollection(MEMBERS);
-        if (!col) return;
-        await setDoc(doc(col, id), {
-          id,
+        const firestore = db();
+        const actorUid = currentUid();
+        if (!firestore || !actorUid) return;
+
+        const memberId = `${input.dashboardId}_${input.uid}`;
+        await setDoc(doc(firestore, MEMBERS, memberId), {
+          uid: input.uid,
           name: input.name,
           email: input.email,
           role: input.role,
           dashboard_id: input.dashboardId,
           invited_at: nowIso(),
         });
+
+        const dashRef = doc(firestore, DASHBOARDS, input.dashboardId);
+        const snap = await getDoc(dashRef);
+        const current = snap.exists()
+          ? ((snap.data() as Record<string, unknown>).member_uids as unknown[])
+          : [];
+        const list = Array.isArray(current) ? current.map(String) : [];
+        await syncProjectMemberUids(input.dashboardId, [...list, input.uid]);
       },
 
       updateMemberRole: async (id: string, role: MemberRole) => {
@@ -714,18 +980,197 @@ export function useDashboardMutations() {
         if (!isFirebase) return;
         const firestore = db();
         if (!firestore) return;
-        await deleteDoc(doc(firestore, MEMBERS, id));
+        const ref = doc(firestore, MEMBERS, id);
+        let dashboardId: string | null = null;
+        let removedUid: string | null = null;
+        try {
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            const data = snap.data() as Record<string, unknown>;
+            dashboardId =
+              data.dashboard_id != null ? String(data.dashboard_id) : null;
+            removedUid = data.uid != null ? String(data.uid) : null;
+          }
+        } catch {
+          // Sem leitura do membro, só remove o documento.
+        }
+
+        await deleteDoc(ref);
+
+        if (dashboardId && removedUid) {
+          const dashRef = doc(firestore, DASHBOARDS, dashboardId);
+          const snap = await getDoc(dashRef);
+          const current = snap.exists()
+            ? ((snap.data() as Record<string, unknown>).member_uids as unknown[])
+            : [];
+          const list = Array.isArray(current)
+            ? current.map(String).filter((value) => value !== removedUid)
+            : [];
+          await syncProjectMemberUids(dashboardId, list);
+        }
       },
     }),
     [isFirebase],
   );
 }
 
+/* ------------------------------ contas ------------------------------ */
+
+/**
+ * Cria o perfil de site (`users/{uid}`) do usuário autenticado como "user".
+ * Roda depois da confirmação de e-mail — é o que dispensa liberação manual.
+ */
+export async function ensureUserProfile(): Promise<void> {
+  const firestore = db();
+  const user = getFirebaseAuth()?.currentUser;
+  if (!firestore || !user || !user.emailVerified || !user.email) return;
+
+  const ref = doc(firestore, USERS, user.uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) return;
+
+  await setDoc(ref, {
+    role: "user",
+    name: user.displayName || user.email.split("@")[0],
+    email: user.email,
+    banned: false,
+    created_at: nowIso(),
+  });
+}
+
+/**
+ * Pedido de promoção a ServerADM: grava `admin_requests/{uid}` (a tela de
+ * "acesso pendente" mostra o UID para o desenvolvedor liberar no console).
+ */
+export async function requestServerAdmin(): Promise<void> {
+  const firestore = db();
+  const uid = currentUid();
+  if (!firestore || !uid) return;
+  const existing = await getDoc(doc(firestore, ADMIN_REQUESTS, uid));
+  if (existing.exists()) return;
+  await setDoc(doc(firestore, ADMIN_REQUESTS, uid), {
+    uid,
+    name: actorName(),
+    email: actorEmail(),
+    requested_at: nowIso(),
+  });
+}
+
+/** Pedido de ServerADM do usuário atual (`null` se não pediu). */
+export function useAdminRequestQuery(): { exists: boolean; at?: string } {
+  const isFirebase = getBackendMode() === "firebase" && isFirebaseReady();
+  const uid = useFirebaseUid();
+  const [request, setRequest] = useState<{ exists: boolean; at?: string }>({
+    exists: false,
+  });
+
+  useEffect(() => {
+    if (!isFirebase || !uid) return;
+    const firestore = db();
+    if (!firestore) return;
+    const unsub = onSnapshot(
+      doc(firestore, ADMIN_REQUESTS, uid),
+      (snap) => {
+        const data = snap.exists()
+          ? (snap.data() as Record<string, unknown>)
+          : null;
+        setRequest({
+          exists: snap.exists(),
+          at: data?.requested_at != null ? String(data.requested_at) : undefined,
+        });
+      },
+      () => setRequest({ exists: false }),
+    );
+    return () => unsub();
+  }, [isFirebase, uid]);
+
+  return request;
+}
+
+/**
+ * Adoção única de dados anteriores ao modelo por projeto (feita pelo
+ * ServerADM): define dono e lista de membros nos documentos legados.
+ */
+export async function adoptLegacyData(): Promise<void> {
+  const firestore = db();
+  const uid = currentUid();
+  if (!firestore || !uid) return;
+
+  const dashboardsCol = collection(firestore, DASHBOARDS);
+  const dashboardsSnap = await getDocs(dashboardsCol);
+  const memberUidsByProject = new Map<string, string[]>();
+
+  for (const d of dashboardsSnap.docs) {
+    const data = d.data() as Record<string, unknown>;
+    const owner = data.owner_uid != null ? String(data.owner_uid) : null;
+    const list = Array.isArray(data.member_uids)
+      ? data.member_uids.map(String)
+      : [];
+    if (!owner) {
+      const next = Array.from(new Set([...list, uid]));
+      await updateDoc(d.ref, { owner_uid: uid, member_uids: next });
+      memberUidsByProject.set(d.id, next);
+      await setDoc(doc(firestore, MEMBERS, `${d.id}_${uid}`), {
+        uid,
+        name: actorName(),
+        email: actorEmail(),
+        role: "admin",
+        dashboard_id: d.id,
+        invited_at: nowIso(),
+      });
+    } else {
+      memberUidsByProject.set(d.id, Array.from(new Set([...list, owner])));
+    }
+  }
+
+  const notesCol = collection(firestore, NOTES);
+  const notesSnap = await getDocs(notesCol);
+  for (const d of notesSnap.docs) {
+    const data = d.data() as Record<string, unknown>;
+    if (Array.isArray(data.member_uids) && data.member_uids.length > 0) continue;
+    const projectId =
+      data.dashboard_id != null ? String(data.dashboard_id) : null;
+    const owner = data.owner_uid != null ? String(data.owner_uid) : uid;
+    await updateDoc(d.ref, {
+      owner_uid: owner,
+      member_uids: projectId
+        ? (memberUidsByProject.get(projectId) ?? [owner])
+        : [owner],
+    });
+  }
+
+  const activityCol = collection(firestore, ACTIVITY);
+  const activitySnap = await getDocs(activityCol);
+  for (const d of activitySnap.docs) {
+    const data = d.data() as Record<string, unknown>;
+    if (Array.isArray(data.member_uids) && data.member_uids.length > 0) continue;
+    const projectId =
+      data.dashboard_id != null ? String(data.dashboard_id) : null;
+    await updateDoc(d.ref, {
+      member_uids: projectId
+        ? (memberUidsByProject.get(projectId) ?? [uid])
+        : [uid],
+    });
+  }
+}
+
+/** Executa a adoção de dados legados uma vez, quando habilitado. */
+export function useLegacyAdoption(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    if (getBackendMode() !== "firebase") return;
+    if (!isFirebaseReady()) return;
+    void adoptLegacyData().catch((error) => {
+      console.error("Adoção de dados legados falhou:", error);
+    });
+  }, [enabled]);
+}
+
 /* -------------------------------- seed -------------------------------- */
 
 /**
- * Popula o workspace uma vez, quando o Firestore está vazio. IDs fixos tornam
- * a operação idempotente — rodar duas vezes não duplica documentos.
+ * Cria um projeto inicial para o usuário, uma vez. IDs fixos tornam a
+ * operação idempotente — rodar duas vezes não duplica documentos.
  */
 export function useSeedOnMount(enabled = true) {
   useEffect(() => {
@@ -747,128 +1192,54 @@ export async function seedWorkspace(): Promise<void> {
   const dashboards = firestoreCollection(DASHBOARDS);
   const notes = firestoreCollection(NOTES);
   const members = firestoreCollection(MEMBERS);
-  const activity = firestoreCollection(ACTIVITY);
-  if (!dashboards || !notes || !members || !activity) return;
+  const uid = currentUid();
+  if (!dashboards || !notes || !members || !uid) return;
 
-  const existing = await getDocs(dashboards);
+  const existing = await getDocs(
+    query(dashboards, where("member_uids", "array-contains", uid)),
+  );
   if (!existing.empty) return;
 
   const now = nowIso();
+  const projectId = `dash-${uid.slice(0, 8)}-inicial`;
 
-  const dashboardsSeed: Dashboard[] = [
-    {
-      id: "dash-seed-1",
-      name: "Experimento A — Coleta",
-      description: "Rotina de coleta e preparação de amostras.",
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: "dash-seed-2",
-      name: "Análises e Relatórios",
-      description: "Resultados, curvas de calibração e relatórios.",
-      createdAt: now,
-      updatedAt: now,
-    },
-  ];
-
-  for (const item of dashboardsSeed) {
-    await setDoc(doc(dashboards, item.id), {
-      name: item.name,
-      description: item.description,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt,
-    });
-  }
-
-  const notesSeed: Array<[string, NewNoteInput, string]> = [
-    [
-      "note-seed-1",
-      {
-        title: "Coletar amostras do experimento A",
-        content: "Preparar tubos, rotular e registrar temperatura ambiente.",
-        status: "in_progress",
-        tags: ["laboratório", "coleta"],
-        assignee: "Ana Costa",
-        startDate: "2026-09-10",
-        dueDate: "2026-09-18",
-        dashboardId: "dash-seed-1",
-      },
-      "Bruno Lima",
-    ],
-    [
-      "note-seed-2",
-      {
-        title: "Revisar resultados da análise B",
-        content: "Conferir duplicatas e validar curva de calibração.",
-        status: "not_started",
-        tags: ["análise"],
-        assignee: "Bruno Lima",
-        startDate: "2026-09-15",
-        dueDate: "2026-09-22",
-        dashboardId: "dash-seed-2",
-      },
-      "Ana Costa",
-    ],
-    [
-      "note-seed-3",
-      {
-        title: "Pedir reposição de reagentes",
-        content: "Buffer PBS e reagente C estão acabando.",
-        status: "blocked",
-        tags: ["suprimentos"],
-        dashboardId: "dash-seed-1",
-      },
-      "Ana Costa",
-    ],
-  ];
-
-  for (const [id, input, actor] of notesSeed) {
-    await setDoc(doc(notes, id), toNoteDoc(input, id, actor, now));
-  }
-
-  const membersSeed: Member[] = [
-    {
-      id: "member-seed-1",
-      name: "Ana Costa",
-      email: "ana@lab.local",
-      role: "admin",
-      dashboardId: "dash-seed-1",
-      invitedAt: now,
-    },
-    {
-      id: "member-seed-2",
-      name: "Bruno Lima",
-      email: "bruno@lab.local",
-      role: "editor",
-      dashboardId: "dash-seed-1",
-      invitedAt: now,
-    },
-    {
-      id: "member-seed-3",
-      name: "Carla Dias",
-      email: "carla@lab.local",
-      role: "viewer",
-      dashboardId: "dash-seed-2",
-      invitedAt: now,
-    },
-  ];
-
-  for (const member of membersSeed) {
-    await setDoc(doc(members, member.id), {
-      name: member.name,
-      email: member.email,
-      role: member.role,
-      dashboard_id: member.dashboardId,
-      invited_at: member.invitedAt,
-    });
-  }
-
-  await setDoc(doc(activity, "act-seed-1"), {
-    note_id: "note-seed-1",
-    note_title: "Coletar amostras do experimento A",
-    action: "created",
-    actor: "Ana Costa",
-    at: now,
+  await setDoc(doc(dashboards, projectId), {
+    id: projectId,
+    name: "Meu primeiro projeto",
+    description: "Organize sprints, anotações e equipe neste projeto.",
+    owner_uid: uid,
+    member_uids: [uid],
+    created_at: now,
+    updated_at: now,
   });
+
+  await setDoc(doc(members, `${projectId}_${uid}`), {
+    uid,
+    name: actorName(),
+    email: actorEmail(),
+    role: "admin",
+    dashboard_id: projectId,
+    invited_at: now,
+  });
+
+  const noteId = `note-${uid.slice(0, 8)}-boas-vindas`;
+  await setDoc(
+    doc(notes, noteId),
+    toNoteDoc(
+      {
+        title: "Bem-vindo ao Lab Notes",
+        content:
+          "Esta anotação é sua. Convide colegas em Equipe & Parceiros para " +
+          "trabalhar no projeto junto com você.",
+        status: "in_progress",
+        tags: ["boas-vindas"],
+        dashboardId: projectId,
+      },
+      noteId,
+      actorName(),
+      now,
+      uid,
+      [uid],
+    ),
+  );
 }

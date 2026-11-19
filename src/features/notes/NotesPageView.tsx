@@ -20,8 +20,7 @@ import {
   getDeadlineState,
   validatePeriod,
 } from "./deadline";
-import { canEditDashboard, useLab } from "@/features/dashboards/store";
-import { useOptionalAuth } from "@/app/router/AppRouter";
+import { useLab } from "@/features/dashboards/store";
 import type { Note, NoteStatus } from "./types";
 
 type DeadlineFilter = "all" | "overdue" | "today" | "soon";
@@ -103,12 +102,11 @@ export function NotesPageView({ projectId }: { projectId?: string } = {}) {
   );
   const toast = useToast();
   /**
-   * P1 — O papel do usuário decide se a tela é editável. Sem sessão
-   * (protótipo/testes) a demonstração continua liberada; com sessão real de
-   * `viewer` a tela entra em modo leitura, espelhando o backend.
+   * Permissão POR PROJETO: admin/escritor editam, leitor só consulta.
+   * Fora de um projeto a anotação é pessoal — o dono sempre edita.
    */
-  const { user } = useOptionalAuth();
-  const canEdit = canEditDashboard(user?.role ?? "admin");
+  const { canEditProject } = useLab();
+  const canEdit = canEditProject(projectId);
   const [query, setQuery] = useState("");
   /** Tick para recomputar "há X min" e o pulso de alteração recente. */
   const [now, setNow] = useState(() => new Date());

@@ -114,7 +114,7 @@ Estado observado no banco em 16/11/2026 (leitura autenticada):
 | Acesso autenticado (escrita) | **200** no `PATCH` de um documento temporário de `sprints`, seguido de `DELETE` **200** |
 | Autenticação | Firebase Auth e-mail/senha ativo; sessão real e ID token autorizando o Firestore |
 | Configuração do cliente | `apiKey`/`projectId` embutidos no bundle — chaves de cliente são públicas por design e exigem regras corretas, que agora existem |
-| Papel por usuário | **Limitação conhecida:** todo usuário autenticado entra como `admin` do workspace; as regras já aceitam um documento `users/{uid}` com `role` para restringir |
+| Papel por usuário | Era `admin` para todos; **corrigido na rodada final** (seção 9): o papel vem de `users/{uid}` e as regras exigem e-mail verificado + convite |
 | Auditoria de dependências | `npm audit --omit=dev`: **4 vulnerabilidades de alta severidade**, todas na cadeia `firebase` → `@firebase/firestore` → `@grpc/grpc-js` |
 
 Sobre o `npm audit`: o caminho de correção automática (`npm audit fix --force`) rebaixaria o Firebase para `9.14.0`, uma mudança incompatível com o código atual. A recomendação é planejar o upgrade do SDK com validação dos hooks antes de aplicar, e não rodar `--force` em produção.
@@ -155,7 +155,7 @@ Interpretação: depois do aquecimento, as leituras ficam na casa de 136 ms — 
 
 ## 7. Pendências e limitações conhecidas
 
-1. **Papel por usuário**: todo autenticado entra como `admin`. As regras já suportam `users/{uid}.role`; falta o app derivar o papel do banco.
+1. **Papel por usuário**: resolvido no código na rodada final (seção 9) — falta **publicar as novas regras** e criar o primeiro `users/{uid}` no console; até lá o app continua com o comportamento antigo.
 2. **Autor da atividade** gravado como `Ana Costa` fixo (`CURRENT_USER`), em vez do nome do usuário autenticado.
 3. **Vulnerabilidades do `npm audit`** na cadeia gRPC do Firebase, sem correção compatível disponível no momento.
 4. **Load/stress sem ferramenta dedicada**: números medidos apenas em leitura, amostra pequena, sem cenários de escrita concorrente ou reconexão.
@@ -174,7 +174,99 @@ Os três eixos avaliados:
 - **Load**: latência média de 183 ms e p50 de 136 ms em leitura real; adequado ao porte do produto, sem medição de render/bundle.
 - **Stress**: 25 leituras concorrentes sem falha e degradação graciosa em estados de erro; sem teste de reconexão ou de escritas concorrentes.
 
-**Decisão:** apto para pré-release e uso em equipe pequena. Antes de produção, tratar os itens 1 a 4 da seção 7.
+**Decisão:** apto para pré-release e uso em equipe pequena. Antes de produção, tratar os itens 1 a 4 da seção 7 — o item 1 já foi endereçado no código (seção 9), restando a publicação das regras.
+
+---
+
+## 9. Endurecimento de segurança (rodada final de 16/11/2026)
+
+Segundo teste de segurança, com sondagem ativa contra o Firestore real (autenticado e anônimo).
+
+### 9.1 O que foi testado e passou
+
+| Sondagem | Resultado |
+|---|---|
+| Anônimo: leitura, escrita e exclusão | **403** |
+| Coleção fora da allowlist (`zzz-nada`): leitura e escrita | **403** |
+| `notes` sem `status`/`tags`/`created_at` | **403** (validação de esquema) |
+| `viewer`: escrever | **403** |
+| `viewer`: ler | **200** |
+| `viewer`: se autopromover a admin | **403** |
+| Login com e-mail inexistente | `INVALID_LOGIN_CREDENTIALS` (não revela se a conta existe) |
+
+### 9.2 Brechas encontradas
+
+| # | Severidade | Brecha | Evidência | Situação |
+|---|---|---|---|---|
+| 1 | Crítica | Cadastro aberto + todo usuário novo virava `admin` | `signUp` aceito com `Origin` estrangeiro (200) | **Corrigido** nas regras/app: exige e-mail verificado e documento `users/{uid}` |
+| 2 | Alta | `apiKey` sem restrição de origem | Chamadas aceitas sem `Referer` e com `Origin` externo | **Ação no console** (ver 9.4) |
+| 3 | Alta | Sem verificação de e-mail | cadastro só com e-mail/senha | **Corrigido**: `sendEmailVerification` no cadastro + regra `email_verified` |
+| 4 | Alta | 4 vulnerabilidades `high` no `npm audit` (cadeia gRPC) | `npm audit --omit=dev` | Pendente: upgrade do SDK (sem correção compatível) |
+| 5 | Média | Sem isolamento entre workspaces | leitura autenticada em tudo | Pendente: modelar `workspaces/{id}` + membros |
+| 6 | Média | Admin podia se rebaixar e ficar trancado fora | `role: viewer` no próprio doc → 200; depois `PATCH`/`DELETE` → 403 | **Corrigido** na regra: admin não altera/apaga o próprio `users/{uid}` |
+| 7 | Média | Papel decidido no cliente (`admin` fixo) | código | **Corrigido**: papel lido de `users/{uid}` também na UI |
+| 8 | Baixa | `activity.actor` fixo em `Ana Costa` | código | Pendente |
+| 9 | Baixa | Sem CSP/cabeçalhos de segurança | nenhum header | Pendente (hosting) |
+| 10 | Baixa | Enumeração de e-mail no cadastro | mensagem `email-already-in-use` | Pendente (mensagem genérica) |
+| 11 | Alta | **XSS armazenado** no editor rico | `el.innerHTML = value` com HTML vindo do banco | **Corrigido**: sanitiza antes de entrar no DOM |
+
+### 9.3 Mudanças aplicadas no código
+
+- `firestore.rules`: modelo de **workspace fechado** — `isMember()` = e-mail verificado **e** `users/{uid}` com papel válido; leitura só para membros; escrita para `editor`/`admin`; `users/{uid}` lido pelo próprio dono (para o app detectar convite), escrito só por outro admin.
+- `src/app/router/AppRouter.tsx`: papel vem de `users/{uid}` (`onSnapshot`); envio de verificação no cadastro; telas **“Confirme seu e-mail”** e **“Acesso pendente”** (mostra o UID e botão de copiar) no lugar do dashboard quando o acesso não está liberado.
+- `src/app/App.tsx`: o seed só roda para membro liberado (evita tentativas de escrita negadas).
+- `src/features/notes/RichText.tsx`: `sanitizeRichHtml` aplicado ao carregar o conteúdo no editor (fecha o XSS armazenado).
+
+### 9.4 Checklist para publicar (ação manual obrigatória)
+
+1. Firestore → Rules: colar o conteúdo de `firestore.rules` e publicar.
+2. Abrir o app e entrar: se aparecer **“Confirme seu e-mail”**, confirmar pelo link (ou usar “Reenviar e-mail”).
+3. Na tela **“Acesso pendente”**, copiar o UID exibido.
+4. Console → Firestore → coleção `users` → documento com esse UID → campo `role` = `admin`. A tela se atualiza sozinha.
+5. Para cada novo membro: mesmo passo 4 com `editor` ou `viewer` (o app mostra o UID da pessoa).
+6. Google Cloud Console → APIs & Services → Credentials → chave do app → *Application restrictions* = HTTP referrers (localhost, domínio de preview, domínio de produção) e *API restrictions* = APIs do Firebase.
+
+**Atenção:** ao publicar as regras, contas sem `users/{uid}` perdem acesso até o passo 4. Se preferir manter leitura aberta a qualquer autenticado por um tempo, remova `isMember()` do `canRead()` enquanto migra — o resto das regras continua válido.
+
+---
+
+---
+
+## 10. Correção de modelo: projetos privados com papéis por projeto (17/11/2026)
+
+A análise do sistema mostrou que o modelo anterior estava errado para o objetivo do projeto: todo projeto era visível para qualquer conta, os papéis eram globais (admin/escritor/leitor no site inteiro) e o papel de cada conta dependia de liberação manual do desenvolvedor. Esta rodada corrige isso.
+
+### 10.1 Modelo novo
+
+| Conceito | Onde fica | Regra |
+|---|---|---|
+| Papel no site | `users/{uid}.role` = `user` \| `server_admin` | Criado automaticamente como `user` no cadastro (e-mail verificado). Só um ServerADM promove. |
+| Projeto | `dashboards/{id}` com `owner_uid` e `member_uids` | Privado: só quem está em `member_uids` (dono + convidados) lê. |
+| Papel no projeto | `members/{projeto}_{uid}.role` = `admin` \| `editor` \| `viewer` | **Administrador**: lê, escreve, edita o projeto e atribui papéis. **Escritor**: lê e escreve. **Leitor**: só lê. |
+| Notas/atividade | `notes`, `activity` com `dashboard_id` e `member_uids` | Só membros do projeto leem. Nota sem projeto é pessoal do criador. |
+| ServerADM | conta escolhida pelos desenvolvedores | Acessa todos os projetos, atribui papéis em qualquer projeto e bane/remove perfis. |
+
+### 10.2 Como funciona agora
+
+1. A conta é criada e o perfil `users/{uid}` nasce sozinho como `user` — **não há mais UID para enviar ao desenvolvedor**.
+2. Qualquer usuário cria um projeto e passa a ser **admin dele**.
+3. Em **Equipe & Parceiros** (dentro do projeto) o admin convida outra conta do site (busca por e-mail no diretório) como **Escritor** ou **Leitor**, e pode mudar o papel depois.
+4. A tela **“Acesso pendente”** só aparece para quem pediu o cargo de ServerADM (link discreto `ServerADM` no rodapé do app). Ela mostra o UID a enviar ao desenvolvedor.
+
+### 10.3 Bootstrap manual (uma vez)
+
+1. Publicar `firestore.rules` no console (Firestore → Rules).
+2. Criar a primeira conta ServerADM: Firestore → `users` → documento com o UID do desenvolvedor → campo `role` = `server_admin`.
+3. Ao entrar como ServerADM, o app adota os dados antigos (projetos sem dono e notas sem `member_uids`): define o ServerADM como dono e cria o vínculo de admin. Isso é idempotente.
+
+### 10.4 Detalhes de implementação relevantes
+
+- As consultas usam `where('member_uids','array-contains', uid)` porque as regras do Firestore **não filtram** resultados de coleção — a consulta precisa provar que só traz documentos permitidos. Por isso cada projeto, nota e registro de atividade guarda a lista de membros.
+- Sem `orderBy` nessas consultas: `array-contains` + ordenação exigiria índice composto (criado no console). A ordenação é feita no cliente.
+- `members` é o diretório de membros por projeto e é legível por qualquer conta registrada (é como o app descobre nomes/e-mails para convidar). Papéis continuam restritos ao admin do projeto.
+- Colunas de sprint continuam estrutura compartilhada do workspace (sem conteúdo sensível), ainda sem escopo por projeto.
+- Banco e remoção de conta: o flag `banned: true` bloqueia o Firestore imediatamente; apagar a conta de autenticação exige o Admin SDK / console.
+- Consequência: **dados antigos sem `owner_uid`/`member_uids` ficam invisíveis até a adoção pelo ServerADM** (item 10.3, passo 3).
 
 ---
 

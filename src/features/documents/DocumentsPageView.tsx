@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type WorkspaceDoc } from "./data";
 import { importFile } from "./import";
-import { useOptionalAuth } from "@/app/router/AppRouter";
-import { canEditDashboard } from "@/features/dashboards/store";
+
 import { useToast } from "@/shared/components/Toast";
+import { useOptionalAuth } from "@/app/router/AppRouter";
 import { ConfirmDialog } from "@/shared/components/ConfirmDialog";
 import { useTrash } from "@/features/trash";
 import {
@@ -29,8 +29,11 @@ import {
  */
 export function DocumentsPageView() {
   const { user } = useOptionalAuth();
-  /** P1 — `viewer` consulta documentos, mas não cria novos. */
-  const canEdit = canEditDashboard(user?.role ?? "admin");
+  /**
+   * As anotações desta tela são locais do navegador (não pertencem a um
+   * projeto), então quem está logado sempre pode criar/editar as suas.
+   */
+  const canEdit = true;
   const { showToast } = useToast();
   const { addItem: addTrashItem } = useTrash();
   const [initialState] = useState<DocsState>(readDocsState);

@@ -111,6 +111,7 @@ vi.mock("firebase/firestore", () => {
       rest,
     }),
     orderBy: (field: string, direction: string) => ({ field, direction }),
+    where: (field: string, op: string, value: unknown) => ({ field, op, value }),
     onSnapshot: (
       _q: unknown,
       optsOrNext: unknown,
@@ -160,7 +161,11 @@ beforeEach(() => {
   state.empty = true;
   state.writes = [];
   state.listeners = 0;
-  state.authUser = { uid: "uid-teste" };
+  state.authUser = {
+    uid: "uid-teste",
+    displayName: "Ana Costa",
+    email: "ana@lab.local",
+  } as unknown as { uid: string };
   state.authListeners = [];
 });
 
@@ -369,6 +374,8 @@ describe("hooks — mutations de notas no modo Firebase", () => {
           created_at: "2026-09-01T00:00:00.000Z",
           updated_at: "2026-09-01T00:00:00.000Z",
           updated_by: "Ana Costa",
+          owner_uid: "uid-teste",
+          member_uids: ["uid-teste"],
         },
       },
       {
@@ -379,6 +386,9 @@ describe("hooks — mutations de notas no modo Firebase", () => {
           note_title: "Nova nota",
           action: "created",
           actor: "Ana Costa",
+          actor_uid: "uid-teste",
+          dashboard_id: null,
+          member_uids: ["uid-teste"],
           at: "2026-09-01T00:00:00.000Z",
         },
       },
@@ -566,9 +576,20 @@ describe("hooks — mutations de dashboards no modo Firebase", () => {
     expect(state.writes[0]).toMatchObject({
       op: "set",
       path: "dashboards/dash-1",
-      data: { name: "Meu dash", description: "" },
+      data: {
+        name: "Meu dash",
+        description: "",
+        owner_uid: "uid-teste",
+        member_uids: ["uid-teste"],
+      },
     });
-    expect(state.writes[1]).toEqual({
+    // O criador entra como admin do projeto (id determinístico).
+    expect(state.writes[1]).toMatchObject({
+      op: "set",
+      path: "members/dash-1_uid-teste",
+      data: { role: "admin", dashboard_id: "dash-1" },
+    });
+    expect(state.writes).toContainEqual({
       op: "update",
       path: "dashboards/dash-1",
       data: { name: "Renomeado", updated_at: "2026-09-01T00:00:00.000Z" },
@@ -583,38 +604,42 @@ describe("hooks — mutations de dashboards no modo Firebase", () => {
     useFirebase();
     const { result } = renderHook(() => useDashboardMutations());
 
-    await result.current.addMember(
-      {
-        name: "Ana Costa",
-        email: "ana@lab.local",
-        role: "admin",
-        dashboardId: "dash-1",
-      },
-      "member-1",
-    );
-    await result.current.updateMemberRole("member-1", "viewer");
-    await result.current.removeMember("member-1");
+    await result.current.addMember({
+      uid: "uid-convidado",
+      name: "Bruno Lima",
+      email: "bruno@lab.local",
+      role: "editor",
+      dashboardId: "dash-1",
+    });
+    await result.current.updateMemberRole("dash-1_uid-convidado", "viewer");
 
-    expect(state.writes).toEqual([
-      {
-        op: "set",
-        path: "members/member-1",
-        data: {
-          id: "member-1",
-          name: "Ana Costa",
-          email: "ana@lab.local",
-          role: "admin",
-          dashboard_id: "dash-1",
-          invited_at: "2026-09-01T00:00:00.000Z",
-        },
+    // O convite grava o membro com id determinístico (projeto_uid), atualiza
+    // a lista de acesso do projeto e sincroniza notas/atividade.
+    expect(state.writes[0]).toEqual({
+      op: "set",
+      path: "members/dash-1_uid-convidado",
+      data: {
+        uid: "uid-convidado",
+        name: "Bruno Lima",
+        email: "bruno@lab.local",
+        role: "editor",
+        dashboard_id: "dash-1",
+        invited_at: "2026-09-01T00:00:00.000Z",
       },
-      {
-        op: "update",
-        path: "members/member-1",
-        data: { role: "viewer" },
+    });
+    expect(state.writes).toContainEqual({
+      op: "update",
+      path: "dashboards/dash-1",
+      data: {
+        member_uids: ["uid-convidado", "uid-teste"],
+        updated_at: "2026-09-01T00:00:00.000Z",
       },
-      { op: "delete", path: "members/member-1" },
-    ]);
+    });
+    expect(state.writes).toContainEqual({
+      op: "update",
+      path: "members/dash-1_uid-convidado",
+      data: { role: "viewer" },
+    });
   });
 });
 
@@ -627,10 +652,10 @@ describe("hooks — workspace inicial", () => {
 
     await waitFor(() => expect(state.writes.length).toBeGreaterThan(0));
     const paths = state.writes.map((w) => w.path);
-    expect(paths).toContain("dashboards/dash-seed-1");
-    expect(paths).toContain("notes/note-seed-1");
-    expect(paths).toContain("members/member-seed-1");
-    expect(paths).toContain("activity/act-seed-1");
+    // Projeto inicial do próprio usuário + membro admin + nota de boas-vindas.
+    expect(paths).toContain("dashboards/dash-uid-test-inicial");
+    expect(paths).toContain("members/dash-uid-test-inicial_uid-teste");
+    expect(paths).toContain("notes/note-uid-test-boas-vindas");
   });
 
   it("não repopula quando já existem dashboards", async () => {

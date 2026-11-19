@@ -112,29 +112,25 @@ describe("Acesso com a conta de demonstração", () => {
   });
 });
 
-describe("Conta nova (viewer) entra em modo leitura", () => {
-  it("mostra o aviso e esconde as ações de escrita nas anotações", async () => {
+describe("Conta nova entra como usuário padrão (sem liberação manual)", () => {
+  it("usa o site normalmente e pode criar anotações", async () => {
     // dash-seed-1 tem uma nota semeada, então há card para inspecionar.
     await entrarComoViewer("/app/p/dash-seed-1/notes", "nova@unicap.br");
 
-    expect(screen.getByText(/Modo leitura \(viewer\)/)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Nova Anotação" })
-    ).toBeDisabled();
-
-    // Colunas do quadro continuam visíveis, mas sem criar/editar.
+    ).toBeEnabled();
+    expect(screen.queryByText(/Modo leitura \(viewer\)/)).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /Adicionar nota em/ })
-    ).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Nova sprint" })).not.toBeInTheDocument();
+      screen.getAllByRole("button", { name: /Adicionar nota em/ }).length
+    ).toBeGreaterThan(0);
   });
 
-  it("na visão em grade, cards não têm Editar/Excluir", async () => {
+  it("na visão em grade, os cards do próprio projeto têm Editar", async () => {
     const user = await entrarComoViewer("/app/p/dash-seed-1/notes", "viewer@unicap.br");
     await user.click(screen.getByRole("tab", { name: "Grade de Cards" }));
 
     expect(screen.getByText("Coletar amostras do experimento A")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Editar" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Excluir" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Editar" })).toBeInTheDocument();
   });
 });

@@ -7,8 +7,7 @@ import {
   type TemplateTab,
 } from "./templates";
 import { useNotes } from "@/features/notes";
-import { useOptionalAuth } from "@/app/router/AppRouter";
-import { canEditDashboard } from "@/features/dashboards/store";
+import { useOptionalLab } from "@/features/dashboards/store";
 import { useToast } from "@/shared/components/Toast";
 
 /**
@@ -25,9 +24,9 @@ export function TemplatesPageView({ projectId }: { projectId?: string } = {}) {
   const navigate = useNavigate();
   const { createNote } = useNotes();
   const { showToast } = useToast();
-  /** P1 — `viewer` não cria nota a partir de modelo. */
-  const { user } = useOptionalAuth();
-  const canEdit = canEditDashboard(user?.role ?? "admin");
+  /** Leitor do projeto não cria nota a partir de modelo. */
+  const lab = useOptionalLab();
+  const canEdit = lab ? lab.canEditProject(projectId) : true;
   const [tab, setTab] = useState<Filter>("todos");
   const [query, setQuery] = useState("");
   const [custom, setCustom] = useState<Template[]>([]);

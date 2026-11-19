@@ -1,9 +1,15 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthShell, RequireAuth, PublicOnly, useAuth } from "./router";
+import {
+  AuthShell,
+  RequireAuth,
+  PublicOnly,
+  ServerAdminRequestPage,
+  useAuth,
+} from "./router";
 import { AppBackendProvider } from "@/shared/backend/AppBackendProvider";
 import { ToastProvider } from "@/shared/components/Toast";
-import { useSeedOnMount } from "@/shared/backend/hooks";
+import { useLegacyAdoption, useSeedOnMount } from "@/shared/backend/hooks";
 import { getBackendMode } from "@/shared/backend/config";
 import { useConvexAuth } from "@convex-dev/auth/react";
 import { NotesProvider } from "@/features/notes";
@@ -43,10 +49,18 @@ function ConvexSeedLauncher() {
 }
 
 function FirebaseSeedLauncher() {
-  // O Firestore só aceita escrita de usuário autenticado (regras do projeto),
-  // então o seed espera a sessão do Firebase Auth.
-  const { user, isLoading } = useAuth();
-  useSeedOnMount(!isLoading && user != null);
+  // O Firestore só aceita escrita de conta registrada (e-mail verificado +
+  // `users/{uid}` com papel de site). Todo usuário novo já entra como "user",
+  // então o seed roda no primeiro acesso — sem liberação manual.
+  const { user, isLoading, access } = useAuth();
+  const canSeed =
+    !isLoading &&
+    user != null &&
+    (access ? access.verified && access.role != null : true);
+  useSeedOnMount(canSeed);
+  // Dados do modelo antigo (projetos sem dono) só podem ser adotados por um
+  // ServerADM, que é quem lê tudo pela regra.
+  useLegacyAdoption(canSeed && access?.role === "server_admin");
   return null;
 }
 
@@ -88,6 +102,10 @@ export default function App() {
                         {/* Projetos ativos: página dedicada com todos os projetos. */}
                         <Route path="projects" element={<ProjectsPage />} />
                         <Route path="team" element={<TeamPage />} />
+                        <Route
+                          path="server-admin"
+                          element={<ServerAdminRequestPage />}
+                        />
                         <Route path="documents" element={<DocumentsPage />} />
                         <Route path="templates" element={<TemplatesPage />} />
                         <Route path="trash" element={<TrashPage />} />

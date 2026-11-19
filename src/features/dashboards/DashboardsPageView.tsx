@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLab, canEditDashboard, canManageMembers, ROLE_LABEL } from "./store";
+import { useLab, ROLE_LABEL } from "./store";
 import { ConfirmDialog } from "@/shared/components/ConfirmDialog";
 import { useNotes } from "@/features/notes";
 import type { Note } from "@/features/notes/types";
@@ -9,7 +9,8 @@ export function DashboardsPageView({ projectId }: { projectId?: string } = {}) {
   const {
     dashboards,
     members,
-    currentRole,
+    canEditProject,
+    canManageProject,
     createDashboard,
     updateDashboard,
     deleteDashboard,
@@ -26,10 +27,8 @@ export function DashboardsPageView({ projectId }: { projectId?: string } = {}) {
   /** Sprint 10 (H3): dashboard aguardando confirmação de exclusão. */
   const [pendingDelete, setPendingDelete] = useState<Dashboard | null>(null);
 
-  const editable = canEditDashboard(currentRole);
-  // P1 — excluir dashboard é destrutivo (desvincula notas e remove membros)
-  // e o backend exige admin; a UI espelha a mesma regra.
-  const canDelete = canManageMembers(currentRole);
+  // Permissões por projeto: cada card usa o papel do usuário NAQUELE projeto
+  // (admin/escritor editam, leitor só consulta; excluir é só do admin).
 
   const notesByDashboard = useMemo(() => {
     const map = new Map<string, Note[]>();
@@ -57,7 +56,7 @@ export function DashboardsPageView({ projectId }: { projectId?: string } = {}) {
               : "Agrupe anotações por contexto e compartilhe com a equipe."}
           </p>
         </div>
-        {editable && !projectId && (
+        {!projectId && (
           <button
             type="button"
             onClick={() => setCreating(true)}
@@ -92,8 +91,8 @@ export function DashboardsPageView({ projectId }: { projectId?: string } = {}) {
                 notes={dNotes}
                 members={dMembers}
                 open={isOpen}
-                editable={editable}
-                canDelete={canDelete}
+                editable={canEditProject(d.id)}
+                canDelete={canManageProject(d.id)}
                 unlinkedNotes={notes.filter((n) => !n.dashboardId)}
                 onToggle={() => setOpenId(isOpen ? null : d.id)}
                 onEdit={() => setEditing(d)}

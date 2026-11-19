@@ -46,12 +46,12 @@ describe("Dashboards — lista de cards", () => {
     const experimento = cardOf("Experimento A — Coleta");
     expect(within(experimento).getByText("1 notas")).toBeInTheDocument();
     expect(within(experimento).getByText("Ana Costa · Administrador")).toBeInTheDocument();
-    expect(within(experimento).getByText("Bruno Lima · Editor")).toBeInTheDocument();
+    expect(within(experimento).getByText("Bruno Lima · Escritor")).toBeInTheDocument();
     // Nota com prazo vencido e status não concluído → selo de atraso.
     expect(within(experimento).getByText("1 atrasada")).toBeInTheDocument();
 
     const analises = cardOf("Análises e Relatórios");
-    expect(within(analises).getByText("Carla Dias · Visualizador")).toBeInTheDocument();
+    expect(within(analises).getByText("Carla Dias · Leitor")).toBeInTheDocument();
 
     // Dashboard sem membros convidados.
     const lancamento = cardOf("Q3 Product Launch");

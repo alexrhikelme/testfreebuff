@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../router/AppRouter";
-import { ROLE_LABEL } from "@/features/dashboards/types";
+import { SITE_ROLE_LABEL } from "@/features/dashboards/types";
 import { useLab } from "@/features/dashboards/store";
 import { useNotes } from "@/features/notes";
 import { NotificationsBell } from "@/features/notes/NotificationsBell";
@@ -246,6 +246,15 @@ export default function AppShellPage() {
           <div className="flex items-center justify-between">
             <p className="text-xs text-on-surface-variant">v4.8.2</p>
             <div className="flex items-center gap-1.5">
+              {user?.role !== "server_admin" && (
+                <Link
+                  to="/app/server-admin"
+                  title="Solicitar acesso ServerADM (visto pelos desenvolvedores)"
+                  className="rounded px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant transition hover:bg-surface-container hover:text-brand-glow"
+                >
+                  ServerADM
+                </Link>
+              )}
               <button
                 type="button"
                 aria-label="Configurações"
@@ -290,7 +299,7 @@ export default function AppShellPage() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                title={`Sair (${user?.name ?? ""}) — ${user?.role ? ROLE_LABEL[user.role] : ""}`}
+                title={`Sair (${user?.name ?? ""}) — ${user?.role ? SITE_ROLE_LABEL[user.role] : ""}`}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand text-xs font-bold text-on-brand transition hover:bg-brand-strong"
                 aria-label={`Sair da conta de ${user?.name ?? "usuário"}`}
               >
