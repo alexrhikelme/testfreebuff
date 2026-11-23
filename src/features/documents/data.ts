@@ -22,6 +22,8 @@ export type WorkspaceDoc = {
   dateLabel: string;
   author: string;
   editedLabel: string;
+  /** Projeto dono da anotação; ausente = anotação do nível do workspace. */
+  projectId?: string;
   sections: DocSection[];
   checklist?: DocCheckItem[];
 };

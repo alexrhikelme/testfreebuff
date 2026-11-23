@@ -277,7 +277,7 @@ export default function DashboardOverviewPage() {
       </section>
 
       <aside className="mt-8 max-w-sm">
-        <ActivityFeed />
+        <ActivityFeed projectId={projectId} />
       </aside>
     </div>
   );

@@ -20,6 +20,7 @@ import {
   useDashboardMutations as useRemoteDashboardMutations,
 } from "@/shared/backend/hooks";
 import { getBackendMode, makeId, nowIso } from "@/shared/backend/config";
+import { normalizeMemberRole } from "./types";
 import { useOptionalToast } from "@/shared/components/Toast";
 import { useOptionalAuth } from "@/app/router/AppRouter";
 
@@ -35,7 +36,9 @@ export type {
 export {
   canEditDashboard,
   canManageMembers,
+  normalizeMemberRole,
   ROLE_LABEL,
+  roleLabel,
   SITE_ROLE_LABEL,
 } from "./types";
 
@@ -114,6 +117,29 @@ const seedMembers: Member[] = [
   },
 ];
 
+/**
+ * Traduz o erro do Firestore em algo acionável: "permission-denied" quase
+ * sempre significa regras antigas publicadas (o papel/lista de membros não
+ * é reconhecido por elas), não um bug da tela.
+ */
+function describeBackendError(error: unknown, action: string): string {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const denied =
+    /permission|insufficient|denied/i.test(message) ||
+    (typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      String((error as { code: unknown }).code) === "permission-denied");
+  if (denied) {
+    return (
+      `${action} foi negado pelo Firestore. Se sua conta é nova, o perfil ` +
+      "ainda pode estar sendo criado — recarregue a página e tente de novo. " +
+      "Se persistir, confirme que o firestore.rules do repositório está publicado."
+    );
+  }
+  return message.length > 0 ? message : `Erro ao ${action.toLowerCase()}.`;
+}
+
 const seedSiteUsers: SiteUser[] = [
   { uid: "local-ana@unicap.br", name: "Ana Costa", email: "ana@unicap.br", banned: false },
   { uid: "local-bruno@unicap.br", name: "Bruno Lima", email: "bruno@unicap.br", banned: false },
@@ -181,7 +207,8 @@ export function LabProvider({ children }: { children: ReactNode }) {
       const member = members.find(
         (m) => m.dashboardId === projectId && m.uid === user.id,
       );
-      if (member) return member.role;
+      const memberRole = member ? normalizeMemberRole(member.role) : null;
+      if (memberRole) return memberRole;
       if (isServerAdmin) return "admin";
       return null;
     },
@@ -222,10 +249,7 @@ export function LabProvider({ children }: { children: ReactNode }) {
           .createDashboard(input, id)
           .then(() => toast.showToast("success", "Projeto criado. Você é o admin dele."))
           .catch((e: unknown) => {
-            toast.showToast(
-              "error",
-              e instanceof Error ? e.message : "Erro ao criar projeto.",
-            );
+            toast.showToast("error", describeBackendError(e, "Criar projeto"));
           });
         return dashboard;
       }

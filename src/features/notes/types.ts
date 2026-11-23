@@ -49,4 +49,6 @@ export type ActivityEntry = {
   action: "created" | "updated" | "status_changed" | "moved" | "deleted";
   actor: string;
   at: string;
+  /** Projeto da nota alterada — o feed é escopado por projeto. */
+  projectId?: string;
 };

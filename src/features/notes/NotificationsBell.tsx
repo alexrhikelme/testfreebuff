@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, matchPath, useLocation } from "react-router-dom";
 import { useNotes } from "./store";
 import { formatRelativeTime } from "./relativeTime";
 import type { ActivityEntry } from "./types";
@@ -27,7 +27,15 @@ const DOT_COLOR: Record<ActivityEntry["action"], string> = {
 };
 
 export function NotificationsBell() {
-  const { activity } = useNotes();
+  const { activity: allActivity } = useNotes();
+  const location = useLocation();
+  /** Dentro de um projeto, o sino mostra só as mudanças daquele projeto. */
+  const projectId =
+    matchPath({ path: "/app/p/:projectId", end: false }, location.pathname)
+      ?.params.projectId ?? null;
+  const activity = projectId
+    ? allActivity.filter((entry) => entry.projectId === projectId)
+    : allActivity;
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   useLab,
   ROLE_LABEL,
+  roleLabel,
   type MemberRole,
   type SiteUser,
 } from "./store";
@@ -99,6 +100,7 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
     members,
     dashboards,
     siteUsers,
+    isServerAdmin,
     canManageProject,
     addMember,
     updateMemberRole,
@@ -142,7 +144,7 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
         name: m.name,
         email: m.email,
         team: dashboards.find((d) => d.id === m.dashboardId)?.name ?? "—",
-        roleLabel: ROLE_LABEL[m.role],
+        roleLabel: roleLabel(m.role),
         storeRole: m.role,
         dashboardId: m.dashboardId,
       }));
@@ -194,9 +196,18 @@ export function TeamPageView({ projectId }: { projectId?: string } = {}) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/30 pb-4">
         <div>
           <h1 className="text-base font-bold text-on-surface">Equipe &amp; Parceiros</h1>
-          {projectId && (
+          {projectId ? (
             <p className="mt-1 text-xs text-on-surface-variant">
               Membros com acesso ao projeto “{project?.name ?? projectId}”.
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-on-surface-variant">
+              Seu acesso no site:{" "}
+              <span className="font-semibold text-on-surface">
+                {isServerAdmin ? "ServerADM" : "Usuário"}
+              </span>
+              {!isServerAdmin &&
+                " — o papel em cada projeto é definido na tela de Equipe do projeto."}
             </p>
           )}
         </div>
@@ -544,6 +555,10 @@ function InviteMemberModal({
     defaultDashboardId ?? dashboards[0]?.id ?? ""
   );
   const [error, setError] = useState<string | null>(null);
+  /** Conta correspondente ao e-mail digitado (feedback ao vivo). */
+  const matched = siteUsers.find(
+    (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -551,7 +566,10 @@ function InviteMemberModal({
       (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
     );
     if (!target) {
-      setError("Esse e-mail ainda não tem conta no site.");
+      setError(
+        "Não existe conta com esse e-mail. O perfil só é criado depois que a " +
+          "pessoa confirma o e-mail e entra no site.",
+      );
       return;
     }
     if (target.banned) {
@@ -580,14 +598,20 @@ function InviteMemberModal({
         </h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-on-surface">E-mail da conta</label>
+            <label className="block text-sm font-medium text-on-surface">
+              E-mail da conta
+            </label>
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
               placeholder="diego@unicap.br"
               list="site-users"
               autoFocus
+              autoComplete="off"
               className="mt-1 block w-full rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
             <datalist id="site-users">
@@ -599,9 +623,18 @@ function InviteMemberModal({
                   </option>
                 ))}
             </datalist>
-            <p className="mt-1 text-[11px] text-on-surface-variant/70">
-              Só é possível convidar quem já criou conta no site.
-            </p>
+            {matched ? (
+              <p className="mt-1 text-[11px] text-on-surface-variant">
+                Conta encontrada:{" "}
+                <span className="font-semibold text-on-surface">{matched.name}</span>
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] text-on-surface-variant/70">
+                {email.trim()
+                  ? "Nenhuma conta com esse e-mail."
+                  : "Digite o e-mail (com sugestões) ou escolha na lista."}
+              </p>
+            )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

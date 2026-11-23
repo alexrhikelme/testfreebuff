@@ -25,6 +25,7 @@ import type {
   MemberRole,
   SiteUser,
 } from "@/features/dashboards/types";
+import { normalizeMemberRole } from "@/features/dashboards/types";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   getFirebaseAuth,
@@ -374,6 +375,10 @@ export function useActivityQuery(): ActivityEntry[] {
             action: (data.action as ActivityEntry["action"]) ?? "updated",
             actor: String(data.actor ?? ""),
             at: isoOf(data.at, nowIso()),
+            projectId:
+              data.dashboard_id != null
+                ? String(data.dashboard_id)
+                : undefined,
           };
         });
         next.sort((a, b) => b.at.localeCompare(a.at));
@@ -487,7 +492,9 @@ export function useMembersQuery(): Member[] {
             uid: data.uid != null ? String(data.uid) : undefined,
             name: String(data.name ?? ""),
             email: String(data.email ?? ""),
-            role: (data.role as MemberRole) ?? "viewer",
+            // Papel inválido no documento vira null; a UI trata como leitor,
+            // mas `server_admin` gravado por engano continua sendo admin.
+            role: normalizeMemberRole(data.role) ?? "viewer",
             dashboardId:
               data.dashboard_id != null ? String(data.dashboard_id) : "",
             invitedAt: isoOf(data.invited_at, nowIso()),
@@ -583,6 +590,36 @@ export function useSprintsQuery(): SprintColumn[] {
 }
 
 /* ------------------------------ mutations ------------------------------ */
+
+/**
+ * Garante que o perfil (`users/{uid}`) existe antes de uma escrita.
+ *
+ * Com o app entrando direto (sem esperar o perfil), uma conta recém-criada
+ * pode clicar em "Novo projeto" antes do documento existir — as regras negam
+ * porque `isRegistered()` ainda é falso. Esta chamada é idempotente.
+ */
+async function ensureProfileReady(): Promise<void> {
+  try {
+    await ensureUserProfile();
+  } catch (error) {
+    // Token antigo (sem `email_verified`) é a causa mais comum: atualiza e
+    // tenta de novo antes de desistir.
+    try {
+      await getFirebaseAuth()?.currentUser?.getIdToken(true);
+      await ensureUserProfile();
+    } catch (retryError) {
+      console.error("Provisionamento do perfil falhou:", retryError, error);
+    }
+  }
+}
+
+/** Erro de permissão do Firestore (regra negou a operação). */
+function isPermissionDenied(error: unknown): boolean {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    return String((error as { code: unknown }).code) === "permission-denied";
+  }
+  return false;
+}
 
 export function useSprintMutations() {
   const isFirebase = getBackendMode() === "firebase" && isFirebaseReady();
@@ -857,26 +894,41 @@ export function useDashboardMutations() {
         const uid = currentUid();
         if (!col || !uid) return;
         const now = nowIso();
-        await setDoc(doc(col, id), {
-          id,
-          name: input.name,
-          description: input.description ?? "",
-          owner_uid: uid,
-          member_uids: [uid],
-          created_at: now,
-          updated_at: now,
-        });
-
         const membersCol = firestoreCollection(MEMBERS);
-        if (!membersCol) return;
-        await setDoc(doc(membersCol, `${id}_${uid}`), {
-          uid,
-          name: actorName(),
-          email: actorEmail(),
-          role: "admin",
-          dashboard_id: id,
-          invited_at: now,
-        });
+
+        const write = async () => {
+          await setDoc(doc(col, id), {
+            id,
+            name: input.name,
+            description: input.description ?? "",
+            owner_uid: uid,
+            member_uids: [uid],
+            created_at: now,
+            updated_at: now,
+          });
+
+          if (!membersCol) return;
+          await setDoc(doc(membersCol, `${id}_${uid}`), {
+            uid,
+            name: actorName(),
+            email: actorEmail(),
+            role: "admin",
+            dashboard_id: id,
+            invited_at: now,
+          });
+        };
+
+        // Perfil primeiro: as regras só aceitam escrita de conta registrada.
+        await ensureProfileReady();
+        try {
+          await write();
+        } catch (error) {
+          if (!isPermissionDenied(error)) throw error;
+          // Perfil criado agora há pouco pelo outro dispositivo/aba: tenta
+          // mais uma vez depois de garantir o documento.
+          await ensureProfileReady();
+          await write();
+        }
       },
 
       updateDashboard: async (
@@ -1194,6 +1246,9 @@ export async function seedWorkspace(): Promise<void> {
   const members = firestoreCollection(MEMBERS);
   const uid = currentUid();
   if (!dashboards || !notes || !members || !uid) return;
+
+  // Sem perfil, as regras negam todas as escritas do seed.
+  await ensureProfileReady();
 
   const existing = await getDocs(
     query(dashboards, where("member_uids", "array-contains", uid)),

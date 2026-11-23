@@ -128,17 +128,6 @@ service cloud.firestore {
       );
     }
 
-    function isProjectMember(projectId) {
-      return isRegistered() && (
-        isProjectAdmin(projectId) || projectRole(projectId) in ['editor', 'viewer']
-      );
-    }
-
-    /** Membro pela lista do documento (provável por `array-contains`). */
-    function inMemberList() {
-      return isRegistered() && request.auth.uid in resource.data.member_uids;
-    }
-
     function noteStatus() {
       return ['not_started', 'in_progress', 'completed', 'blocked'];
     }
@@ -149,16 +138,6 @@ service cloud.firestore {
 
     function activityActions() {
       return ['created', 'updated', 'status_changed', 'moved', 'deleted'];
-    }
-
-    function canReadNote() {
-      return isServerAdmin()
-        || ('dashboard_id' in resource.data
-            && resource.data.dashboard_id != null
-            && isProjectMember(resource.data.dashboard_id))
-        || (('dashboard_id' in resource.data
-            && resource.data.dashboard_id == null)
-            && resource.data.owner_uid == request.auth.uid);
     }
 
     function canWriteNote() {

@@ -234,6 +234,7 @@ function FirebaseAuthShell({ children }: { children?: ReactNode }) {
     role: null,
     uid: null,
   });
+  const [provisionError, setProvisionError] = useState(false);
 
   // Sessão persistida pelo próprio SDK: restaura o usuário ao recarregar.
   React.useEffect(() => {
@@ -243,6 +244,15 @@ function FirebaseAuthShell({ children }: { children?: ReactNode }) {
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, (next) => {
+      // Sessão restaurada pode carregar um ID token anterior à confirmação
+      // de e-mail (sem a claim `email_verified`) — as regras do Firestore
+      // negariam tudo. Força um token novo sempre que o e-mail está
+      // verificado; é uma requisição única na abertura do app.
+      if (next?.emailVerified) {
+        void next.getIdToken(true).catch((error) => {
+          console.error("Atualização do token falhou:", error);
+        });
+      }
       setUser(
         next
           ? {
@@ -296,8 +306,16 @@ function FirebaseAuthShell({ children }: { children?: ReactNode }) {
         // Primeiro acesso: o perfil é criado sozinho com o papel padrão
         // "user" — não existe mais liberação manual de conta nova.
         void ensureUserProfile()
-          .catch((error) => {
+          .catch(async (error) => {
             console.error("Provisionamento do perfil falhou:", error);
+            // Token pode estar sem `email_verified`: força um novo e repete.
+            try {
+              await getFirebaseAuth()?.currentUser?.getIdToken(true);
+              await ensureUserProfile();
+            } catch (retryError) {
+              console.error("Provisionamento do perfil falhou (2ª tentativa):", retryError);
+              setProvisionError(true);
+            }
           })
           .then(() => applyRole(null));
       },
@@ -321,6 +339,16 @@ function FirebaseAuthShell({ children }: { children?: ReactNode }) {
       await reload(current);
     } catch (e) {
       console.error("reload do usuário falhou:", e);
+    }
+    // `reload` atualiza o usuário, mas NÃO o ID token: sem forçar
+    // `getIdToken(true)`, o Firestore continuaria recebendo um token sem a
+    // claim `email_verified` e negaria toda leitura/escrita.
+    if (current.emailVerified) {
+      try {
+        await current.getIdToken(true);
+      } catch (e) {
+        console.error("Atualização do token falhou:", e);
+      }
     }
     setAccess((prev) => ({ ...prev, verified: current.emailVerified }));
     if (current.emailVerified) {
@@ -397,7 +425,18 @@ function FirebaseAuthShell({ children }: { children?: ReactNode }) {
     refreshAccess,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {provisionError && (
+        <div className="fixed bottom-3 right-3 z-50 max-w-sm rounded-md border border-error/40 bg-error/10 px-3 py-2 text-[11px] leading-snug text-red-300">
+          Não foi possível criar seu perfil de usuário (Firestore negou).
+          Recarregue a página; se persistir, confirme que o firestore.rules do
+          repositório está publicado.
+        </div>
+      )}
+    </AuthContext.Provider>
+  );
 }
 
 /* ------------------------------------------------------------------ */

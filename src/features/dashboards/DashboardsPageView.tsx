@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLab, ROLE_LABEL } from "./store";
+import { useLab, roleLabel } from "./store";
 import { ConfirmDialog } from "@/shared/components/ConfirmDialog";
 import { useNotes } from "@/features/notes";
 import type { Note } from "@/features/notes/types";
@@ -201,9 +201,9 @@ function DashboardCard({
             <span
               key={m.id}
               className="rounded bg-surface-container px-2 py-0.5"
-              title={ROLE_LABEL[m.role]}
+              title={roleLabel(m.role)}
             >
-              {m.name} · {ROLE_LABEL[m.role]}
+              {m.name} · {roleLabel(m.role)}
             </span>
           ))
         )}

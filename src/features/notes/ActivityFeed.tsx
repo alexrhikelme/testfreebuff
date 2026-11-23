@@ -22,8 +22,12 @@ const ACTION_COLOR: Record<ActivityEntry["action"], string> = {
  * Sprint 6 — Feed de atividade colaborativa: mostra quem fez o quê e quando,
  * para que mudanças assíncronas não peguem o time de surpresa.
  */
-export function ActivityFeed() {
-  const { activity } = useNotes();
+export function ActivityFeed({ projectId }: { projectId?: string } = {}) {
+  const { activity: allActivity } = useNotes();
+  /** Dentro de um projeto o feed mostra só as mudanças daquele projeto. */
+  const activity = projectId
+    ? allActivity.filter((entry) => entry.projectId === projectId)
+    : allActivity;
 
   if (activity.length === 0) {
     return (

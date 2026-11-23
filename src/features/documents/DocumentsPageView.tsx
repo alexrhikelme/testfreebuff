@@ -27,7 +27,7 @@ import {
  * painel de leitura com autor, "Salvo automaticamente às HH:MM", desfazer/
  * refazer, Compartilhar, lixeira e checklist funcional (checkboxes redondos).
  */
-export function DocumentsPageView() {
+export function DocumentsPageView({ projectId }: { projectId?: string } = {}) {
   const { user } = useOptionalAuth();
   /**
    * As anotações desta tela são locais do navegador (não pertencem a um
@@ -54,12 +54,23 @@ export function DocumentsPageView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [draggingFile, setDraggingFile] = useState(false);
 
+  /** Cada projeto tem as próprias anotações; sem projeto, todas as do workspace. */
+  const scopedDocs = useMemo(
+    () => (projectId ? docs.filter((d) => d.projectId === projectId) : docs),
+    [docs, projectId],
+  );
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return docs.filter((d) => q === "" || d.title.toLowerCase().includes(q));
-  }, [docs, query]);
+    return scopedDocs.filter(
+      (d) => q === "" || d.title.toLowerCase().includes(q)
+    );
+  }, [scopedDocs, query]);
 
-  const selected = docs.find((d) => d.id === selectedId) ?? visible[0] ?? docs[0];
+  const selected =
+    scopedDocs.find((d) => d.id === selectedId) ??
+    visible[0] ??
+    scopedDocs[0];
 
   // Toda mudança (criar, importar, editar texto/título, checklist, seleção)
   // é gravada na hora, então voltar para esta janela mantém o conteúdo.
@@ -95,6 +106,7 @@ export function DocumentsPageView() {
       dateLabel: "Agora",
       author: user?.name ?? "Ana Costa",
       editedLabel: `Editado agora às ${hh}:${mm}`,
+      projectId,
       sections: [
         {
           text: "Comece a escrever sua anotação, rascunho ou documentação rápida da equipe.",
@@ -111,7 +123,8 @@ export function DocumentsPageView() {
     const file = files?.[0];
     if (!file) return;
     try {
-      const doc = await importFile(file, user?.name ?? "Ana Costa");
+      const imported = await importFile(file, user?.name ?? "Ana Costa");
+      const doc: WorkspaceDoc = { ...imported, projectId };
       setDocs((prev) => [doc, ...prev]);
       setSelectedId(doc.id);
       setQuery("");
@@ -184,6 +197,7 @@ export function DocumentsPageView() {
     addTrashItem({
       title: doc.title,
       kind: "documento",
+      projectId: doc.projectId ?? projectId,
       // Restaurar na Lixeira devolve a anotação para a lista, na posição original.
       onRestore: () => restoreDocToStorage(doc, position),
     });
@@ -365,7 +379,7 @@ export function DocumentsPageView() {
           </div>
           {visible.length === 0 ? (
             <p className="rounded-sm border border-outline-variant/30 bg-surface-container-lowest px-3 py-4 text-sm text-on-surface-variant">
-              {docs.length === 0
+              {scopedDocs.length === 0
                 ? "Nenhuma anotação. Crie uma nova ou importe um arquivo."
                 : "Nenhum documento encontrado."}
             </p>

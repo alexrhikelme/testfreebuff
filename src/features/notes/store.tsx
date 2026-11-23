@@ -352,6 +352,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         noteTitle: note.title,
         action: "created",
         actor,
+        projectId: note.dashboardId,
       });
       return note;
     },
@@ -389,6 +390,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
               noteTitle: target.title,
               action: isStatusChange ? "status_changed" : "updated",
               actor,
+              projectId: target.dashboardId,
             })
           );
         }
@@ -429,6 +431,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
               noteTitle: target.title,
               action: "deleted",
               actor,
+              projectId: target.dashboardId,
             })
           );
         }
@@ -491,6 +494,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
               noteTitle: target.title,
               action: "moved",
               actor,
+              projectId: target.dashboardId,
             })
           );
         }

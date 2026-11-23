@@ -17,8 +17,12 @@ const FILTER_LABEL: Record<Filter, string> = {
   documento: "Documentos",
 };
 
-export function TrashPageView() {
-  const { items, restore, remove, empty, restoreAll } = useTrash();
+export function TrashPageView({ projectId }: { projectId?: string } = {}) {
+  const { items: allItems, restore, remove, empty, restoreAll } = useTrash();
+  /** Cada projeto tem a própria lixeira; sem projeto, a do workspace inteiro. */
+  const items = projectId
+    ? allItems.filter((i) => i.projectId === projectId)
+    : allItems;
   const { showToast } = useToast();
   const [filter, setFilter] = useState<Filter>("todos");
   const [query, setQuery] = useState("");
@@ -54,7 +58,7 @@ export function TrashPageView() {
           <button
             type="button"
             onClick={() => {
-              restoreAll();
+              restoreAll(projectId);
               showToast("success", "Todos os itens restaurados.");
             }}
             disabled={items.length === 0}
@@ -227,7 +231,7 @@ export function TrashPageView() {
           description={`Todos os ${items.length} itens serão excluídos permanentemente. Esta ação não pode ser desfeita.`}
           confirmLabel="Esvaziar"
           onConfirm={() => {
-            empty();
+            empty(projectId);
             showToast("success", "Lixeira esvaziada.");
             setConfirmEmpty(false);
           }}

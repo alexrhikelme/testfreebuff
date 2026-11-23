@@ -17,6 +17,11 @@ export type TrashItem = {
   /** Momento da exclusão (ISO) — usado no rótulo "há X dias"/"em D de Mês". */
   deletedAt: string;
   /**
+   * Projeto dono do item. `undefined` = item do nível do workspace (não
+   * aparece dentro de um projeto).
+   */
+  projectId?: string;
+  /**
    * Como devolver o item de onde ele saiu (ex.: reinserir a anotação em
    * "Minhas Anotações"). Itens de exemplo não têm origem e ficam sem ação.
    */
@@ -44,14 +49,15 @@ type TrashContextValue = {
   restore: (id: string) => void;
   /** Exclusão definitiva de um item. */
   remove: (id: string) => void;
-  /** Esvazia a lixeira inteira. */
-  empty: () => void;
-  /** Sprint 13: restaura todos os itens de uma vez. */
-  restoreAll: () => void;
+  /** Esvazia a lixeira (de um projeto, ou inteira sem argumento). */
+  empty: (projectId?: string) => void;
+  /** Sprint 13: restaura todos os itens de uma vez (por projeto). */
+  restoreAll: (projectId?: string) => void;
   /** Envia para a lixeira um item excluído no sistema. */
   addItem: (input: {
     title: string;
     kind: TrashKind;
+    projectId?: string;
     onRestore?: () => void;
   }) => TrashItem;
 };
@@ -73,16 +79,32 @@ export function TrashProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
-  const empty = useCallback(() => setItems([]), []);
+  /** Escopo: sem `projectId` age na lixeira inteira; com, só nos itens dele. */
+  const empty = useCallback(
+    (projectId?: string) =>
+      setItems((prev) =>
+        projectId ? prev.filter((i) => i.projectId !== projectId) : [],
+      ),
+    [],
+  );
   /** Restaurar Todos também devolve cada item à origem. */
-  const restoreAll = useCallback(() => {
-    for (const item of items) item.onRestore?.();
-    setItems([]);
-  }, [items]);
+  const restoreAll = useCallback(
+    (projectId?: string) => {
+      const scoped = items.filter(
+        (i) => !projectId || i.projectId === projectId,
+      );
+      for (const item of scoped) item.onRestore?.();
+      setItems((prev) =>
+        projectId ? prev.filter((i) => i.projectId !== projectId) : [],
+      );
+    },
+    [items],
+  );
 
   const addItem = useCallback((input: {
     title: string;
     kind: TrashKind;
+    projectId?: string;
     onRestore?: () => void;
   }) => {
     const item: TrashItem = {
@@ -90,6 +112,7 @@ export function TrashProvider({ children }: { children: ReactNode }) {
       title: input.title,
       kind: input.kind,
       deletedAt: nowIso(),
+      projectId: input.projectId,
       onRestore: input.onRestore,
     };
     setItems((prev) => [item, ...prev]);

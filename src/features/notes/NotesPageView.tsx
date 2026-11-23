@@ -588,7 +588,7 @@ export function NotesPageView({ projectId }: { projectId?: string } = {}) {
       )}
 
       <aside className="mt-8 max-w-sm">
-        <ActivityFeed />
+                    <ActivityFeed projectId={projectId} />
       </aside>
     </div>
   );

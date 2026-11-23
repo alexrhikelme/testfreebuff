@@ -40,6 +40,38 @@ export type SiteUser = {
   banned: boolean;
 };
 
+/**
+ * Normaliza o papel guardado em `members/{projeto}_{uid}`.
+ *
+ * Aceita variações comuns (inclusive `server_admin`, que às vezes acaba
+ * gravado no documento errado) para que um valor estranho não transforme o
+ * admin do projeto em leitor:
+ *   admin | server_admin | owner        → admin
+ *   editor | writer | escritor          → editor
+ *   viewer | reader | leitor            → viewer
+ * Qualquer outro valor → null (sem papel no projeto).
+ */
+export function normalizeMemberRole(value: unknown): MemberRole | null {
+  if (typeof value !== "string") return null;
+  const role = value.trim().toLowerCase();
+  if (role === "admin" || role === "server_admin" || role === "owner") {
+    return "admin";
+  }
+  if (role === "editor" || role === "writer" || role === "escritor") {
+    return "editor";
+  }
+  if (role === "viewer" || role === "reader" || role === "leitor") {
+    return "viewer";
+  }
+  return null;
+}
+
+/** Rótulo seguro, mesmo para um papel inválido vindo do banco. */
+export function roleLabel(role: unknown): string {
+  const normalized = normalizeMemberRole(role);
+  return normalized ? ROLE_LABEL[normalized] : "Sem papel";
+}
+
 /** Permissões derivadas do papel no projeto — fonte única (UI e regras). */
 export function canEditDashboard(role: MemberRole): boolean {
   return role === "admin" || role === "editor";

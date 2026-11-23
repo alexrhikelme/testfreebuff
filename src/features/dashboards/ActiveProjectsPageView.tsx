@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useLab } from "./store";
 import { DashboardFormModal } from "./DashboardsPageView";
 import { useNotes } from "@/features/notes";
+import { ConfirmDialog } from "@/shared/components/ConfirmDialog";
 import type { Dashboard } from "./store";
 
 /**
@@ -19,9 +20,11 @@ const QUICK_SECTIONS = [
 ] as const;
 
 export function ActiveProjectsPageView() {
-  const { dashboards, members } = useLab();
+  const { dashboards, members, canManageProject, deleteDashboard } = useLab();
   const { notes } = useNotes();
   const [creating, setCreating] = useState(false);
+  /** Projeto aguardando confirmação de exclusão. */
+  const [pendingDelete, setPendingDelete] = useState<Dashboard | null>(null);
 
   // Todo usuário do site pode criar um projeto — e vira admin dele.
   const editable = true;
@@ -80,6 +83,9 @@ export function ActiveProjectsPageView() {
               key={d.id}
               project={d}
               stats={stats.get(d.id) ?? { total: 0, open: 0, members: 0 }}
+              onDelete={
+                canManageProject(d.id) ? () => setPendingDelete(d) : undefined
+              }
             />
           ))}
         </ul>
@@ -91,6 +97,19 @@ export function ActiveProjectsPageView() {
           onClose={() => setCreating(false)}
         />
       )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Excluir “${pendingDelete.name}”?`}
+          description="O projeto sai da lista e do seu workspace para todos os membros. As anotações dele não são apagadas: voltam para o criador delas, fora do projeto."
+          confirmLabel="Excluir projeto"
+          onConfirm={() => {
+            deleteDashboard(pendingDelete.id);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }
@@ -98,9 +117,12 @@ export function ActiveProjectsPageView() {
 function ProjectTile({
   project,
   stats,
+  onDelete,
 }: {
   project: Dashboard;
   stats: { total: number; open: number; members: number };
+  /** Só o admin do projeto vê a ação de excluir. */
+  onDelete?: () => void;
 }) {
   const base = `/app/p/${project.id}`;
   return (
@@ -149,7 +171,7 @@ function ProjectTile({
         )}
       </p>
 
-      <div className="mt-auto flex flex-wrap gap-1.5 border-t border-outline-variant/30 pt-3">
+      <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-outline-variant/30 pt-3">
         {QUICK_SECTIONS.map(([seg, label]) => (
           <Link
             key={seg}
@@ -160,6 +182,20 @@ function ProjectTile({
             {label}
           </Link>
         ))}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label={`Excluir projeto ${project.name}`}
+            title="Excluir projeto"
+            className="ml-auto rounded-md p-1.5 text-on-surface-variant transition hover:bg-error/10 hover:text-error"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        )}
       </div>
     </li>
   );
