@@ -4,8 +4,11 @@ import { entrar, PROJETO_ID } from "./apoio";
 /**
  * Lixeira: contagens por tipo, filtro por categoria, busca por título e
  * restauração de item com toast de confirmação.
+ *
+ * A lixeira do workspace (`/app/trash`) reúne os itens de exemplo; a de cada
+ * projeto (`/app/p/:id/trash`) mostra apenas o que foi excluído ali.
  */
-const LIXEIRA = `/app/p/${PROJETO_ID}/trash`;
+const LIXEIRA = "/app/trash";
 
 test.describe("Lixeira", () => {
   test.beforeEach(async ({ page }) => {
@@ -68,5 +71,15 @@ test.describe("Lixeira", () => {
       main.getByText("App Realidade Aumentada Museu UNICAP")
     ).toHaveCount(0);
     await expect(page.getByText(/restaurado/)).toBeVisible();
+  });
+});
+
+test.describe("Lixeira do projeto", () => {
+  test("não mostra os itens do nível do workspace", async ({ page }) => {
+    await entrar(page, `/app/p/${PROJETO_ID}/trash`);
+
+    const main = page.getByRole("main");
+    await expect(main.getByRole("listitem")).toHaveCount(0);
+    await expect(main.getByText("A lixeira está vazia.")).toBeVisible();
   });
 });
